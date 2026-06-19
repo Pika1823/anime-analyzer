@@ -26,6 +26,56 @@
   <section id="tab-ranking" class="tab-panel active">
     <h2 class="section-title">未アニメ化作品 類似度ランキング</h2>
 
+    <!-- 説明パネル（折りたたみ可） -->
+    <div class="info-panel" id="info-panel">
+      <button class="info-toggle" id="info-toggle" aria-expanded="true">
+        <span>ℹ このツールについて</span>
+        <span class="info-chevron" id="info-chevron">▲</span>
+      </button>
+      <div class="info-body" id="info-body">
+        <p class="info-lead">
+          「小説家になろう」の月刊TOP作品の中から、<strong>アニメ化済み作品に特徴が近い未アニメ化作品</strong>を数値で探すツールです。
+          行をクリックすると詳細スコアを確認できます。
+        </p>
+        <div class="score-explain">
+          <div class="score-explain-title">スコアの計算方法 <span class="score-range">（0.00 〜 1.00、1.00 が最も似ている）</span></div>
+          <div class="score-factors">
+            <div class="factor-row">
+              <span class="factor-label">ジャンル一致</span>
+              <div class="factor-bar-bg"><div class="factor-bar" style="width:60%"></div></div>
+              <span class="factor-weight">30%</span>
+              <span class="factor-desc">ファンタジー・恋愛など大分類が同じか</span>
+            </div>
+            <div class="factor-row">
+              <span class="factor-label">タグ類似度</span>
+              <div class="factor-bar-bg"><div class="factor-bar" style="width:50%"></div></div>
+              <span class="factor-weight">25%</span>
+              <span class="factor-desc">「転生」「異世界」など共通キーワードの割合</span>
+            </div>
+            <div class="factor-row">
+              <span class="factor-label">ランク帯</span>
+              <div class="factor-bar-bg"><div class="factor-bar" style="width:40%"></div></div>
+              <span class="factor-weight">20%</span>
+              <span class="factor-desc">月刊1〜100位=高、101〜300=中、301〜=低</span>
+            </div>
+            <div class="factor-row">
+              <span class="factor-label">BM/View比率</span>
+              <div class="factor-bar-bg"><div class="factor-bar" style="width:30%"></div></div>
+              <span class="factor-weight">15%</span>
+              <span class="factor-desc">ブックマーク数 ÷ 総閲覧数（コア読者の定着度）</span>
+            </div>
+            <div class="factor-row">
+              <span class="factor-label">View成長率</span>
+              <div class="factor-bar-bg"><div class="factor-bar" style="width:20%"></div></div>
+              <span class="factor-weight">10%</span>
+              <span class="factor-desc">直近6ヶ月の閲覧数の伸び（データ蓄積後に有効）</span>
+            </div>
+          </div>
+          <p class="info-note">⚙ 設定タブで各項目の重みを自由に変更できます</p>
+        </div>
+      </div>
+    </div>
+
     <div class="filter-bar">
       <label>
         ジャンル:
@@ -54,8 +104,11 @@
             <th>タイトル</th>
             <th>ジャンル</th>
             <th>月刊順位</th>
-            <th>スコア</th>
-            <th>最類似アニメ</th>
+            <th>
+              スコア
+              <span class="th-tooltip" title="アニメ化済み作品との類似度（0.00〜1.00）。クリックで内訳を表示">ⓘ</span>
+            </th>
+            <th>最類似アニメ <span class="th-tooltip" title="スコアが最も高かった比較対象のアニメ作品">ⓘ</span></th>
           </tr>
         </thead>
         <tbody id="ranking-body">
@@ -103,29 +156,50 @@
   <section id="tab-settings" class="tab-panel">
     <h2 class="section-title">Pattern 1 スコア重み設定</h2>
 
+    <p class="settings-desc">
+      類似度スコアを構成する5つの指標のウェイトを変更できます。<br>
+      重みの合計が <strong>100%</strong> になるよう調整し、「適用」を押すとランキングがリアルタイムで更新されます。
+      設定はブラウザに保存されます。
+    </p>
+
     <div class="settings-card">
       <div class="weight-row">
-        <label for="weight-genre">ジャンル一致</label>
+        <div class="weight-label-wrap">
+          <label for="weight-genre">ジャンル一致</label>
+          <span class="weight-hint">同じ大分類（ファンタジー・恋愛等）かどうか</span>
+        </div>
         <input type="range" id="weight-genre" min="0" max="100" step="1" value="30" />
         <span class="weight-val" id="weight-genre-val">30%</span>
       </div>
       <div class="weight-row">
-        <label for="weight-tag">タグ類似度</label>
+        <div class="weight-label-wrap">
+          <label for="weight-tag">タグ類似度</label>
+          <span class="weight-hint">共通タグの割合（Jaccard係数）</span>
+        </div>
         <input type="range" id="weight-tag" min="0" max="100" step="1" value="25" />
         <span class="weight-val" id="weight-tag-val">25%</span>
       </div>
       <div class="weight-row">
-        <label for="weight-rank">ランク帯</label>
+        <div class="weight-label-wrap">
+          <label for="weight-rank">ランク帯</label>
+          <span class="weight-hint">月刊1〜100位=1.0 / 101〜300位=0.6 / 301〜=0.3</span>
+        </div>
         <input type="range" id="weight-rank" min="0" max="100" step="1" value="20" />
         <span class="weight-val" id="weight-rank-val">20%</span>
       </div>
       <div class="weight-row">
-        <label for="weight-bmView">BM/View比率</label>
+        <div class="weight-label-wrap">
+          <label for="weight-bmView">BM/View比率</label>
+          <span class="weight-hint">ブックマーク ÷ 総閲覧数（コア読者定着度）</span>
+        </div>
         <input type="range" id="weight-bmView" min="0" max="100" step="1" value="15" />
         <span class="weight-val" id="weight-bmView-val">15%</span>
       </div>
       <div class="weight-row">
-        <label for="weight-growth">View成長率</label>
+        <div class="weight-label-wrap">
+          <label for="weight-growth">View成長率</label>
+          <span class="weight-hint">直近6ヶ月の閲覧増加率（※データ蓄積後に有効）</span>
+        </div>
         <input type="range" id="weight-growth" min="0" max="100" step="1" value="10" />
         <span class="weight-val" id="weight-growth-val">10%</span>
       </div>

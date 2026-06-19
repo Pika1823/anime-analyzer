@@ -278,7 +278,7 @@ tbody td {
   margin-bottom: 1rem;
 }
 
-.weight-row label {
+.weight-row > label {
   width: 130px;
   font-size: 0.875rem;
   flex-shrink: 0;
@@ -330,6 +330,153 @@ tbody td {
 .btn-secondary {
   background: #eee;
   color: #333;
+}
+
+/* ── 説明パネル ─────────────────────────────────── */
+.info-panel {
+  background: #fff;
+  border: 1px solid #e0e4ef;
+  border-radius: 8px;
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+}
+
+.info-toggle {
+  width: 100%;
+  background: #f0f3ff;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  transition: background 0.15s;
+}
+
+.info-toggle:hover { background: #e4e9ff; }
+
+.info-chevron {
+  font-size: 0.75rem;
+  transition: transform 0.2s;
+  color: #555;
+}
+
+.info-body {
+  padding: 1.25rem;
+  border-top: 1px solid #e0e4ef;
+}
+
+.info-body.collapsed { display: none; }
+
+.info-lead {
+  font-size: 0.9rem;
+  color: #444;
+  margin-bottom: 1rem;
+  line-height: 1.7;
+}
+
+.score-explain {
+  background: #f8f9ff;
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+}
+
+.score-explain-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 0.75rem;
+}
+
+.score-range {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: #666;
+}
+
+.score-factors { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.factor-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 36px 1fr;
+  align-items: center;
+  gap: 0.625rem;
+  font-size: 0.8rem;
+}
+
+.factor-label {
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+}
+
+.factor-bar-bg {
+  background: #e0e4ef;
+  border-radius: 4px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.factor-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #e94560, #0f3460);
+  border-radius: 4px;
+}
+
+.factor-weight {
+  font-weight: 700;
+  color: #e94560;
+  text-align: right;
+}
+
+.factor-desc { color: #666; }
+
+.info-note {
+  font-size: 0.8rem;
+  color: #888;
+  margin-top: 0.75rem;
+}
+
+/* ツールチップ（th内のⓘアイコン） */
+.th-tooltip {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.5);
+  cursor: help;
+  vertical-align: middle;
+}
+
+/* 設定タブの説明文 */
+.settings-desc {
+  font-size: 0.875rem;
+  color: #555;
+  line-height: 1.7;
+  margin-bottom: 1.25rem;
+}
+
+/* 重みラベルを2行表示（ラベル + ヒント） */
+.weight-label-wrap {
+  width: 140px;
+  flex-shrink: 0;
+}
+
+.weight-label-wrap label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.weight-hint {
+  display: block;
+  font-size: 0.72rem;
+  color: #888;
+  line-height: 1.4;
+  margin-top: 1px;
 }
 
 /* エラーメッセージ */

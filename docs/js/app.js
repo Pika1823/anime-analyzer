@@ -507,6 +507,26 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('trends-novel-select').addEventListener('change', renderTrends);
   document.getElementById('trends-anime-select').addEventListener('change', renderTrends);
 
+  // 説明パネルの折りたたみ
+  const infoToggle = document.getElementById('info-toggle');
+  const infoBody = document.getElementById('info-body');
+  const infoChevron = document.getElementById('info-chevron');
+  const INFO_LS_KEY = 'animeTool.infoOpen';
+
+  const infoOpen = localStorage.getItem(INFO_LS_KEY) !== 'false';
+  if (!infoOpen) {
+    infoBody.classList.add('collapsed');
+    infoChevron.textContent = '▼';
+    infoToggle.setAttribute('aria-expanded', 'false');
+  }
+
+  infoToggle.addEventListener('click', () => {
+    const isCollapsed = infoBody.classList.toggle('collapsed');
+    infoChevron.textContent = isCollapsed ? '▼' : '▲';
+    infoToggle.setAttribute('aria-expanded', String(!isCollapsed));
+    localStorage.setItem(INFO_LS_KEY, String(!isCollapsed));
+  });
+
   // データ読み込み開始
   loadData();
 });
