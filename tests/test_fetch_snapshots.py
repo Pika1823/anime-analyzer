@@ -64,6 +64,15 @@ def test_calc_daily_view_returns_zero_when_no_change():
     assert result == 0
 
 
+def test_calc_daily_view_clamps_negative_to_zero():
+    """累計viewが減少した場合、0を返すことを確認する。"""
+    snapshots = pd.DataFrame([
+        {"ncode": "N1234AB", "date": "2024-01-01", "cumulative_view": 200}
+    ])
+    result = calc_daily_view("N1234AB", 150, snapshots, date(2024, 1, 2))
+    assert result == 0
+
+
 def test_calc_daily_view_handles_missing_allcount():
     """allcount が None の場合はスキップされることを確認する。"""
     # fetch_novel_snapshot が allcount なしの dict を返す場合

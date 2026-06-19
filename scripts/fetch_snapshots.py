@@ -71,7 +71,9 @@ def calc_daily_view(
     except (TypeError, ValueError):
         return None
 
-    return int(cumulative_view) - int(prev_cumulative)
+    result = int(cumulative_view) - int(prev_cumulative)
+    # 累計 view の減少（データ補正等）による負値を 0 にクランプする
+    return max(result, 0)
 
 
 def main() -> None:

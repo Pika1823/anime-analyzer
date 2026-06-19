@@ -48,13 +48,15 @@ def fetch_monthly_top(limit: int = NAROU_MAX_COUNT) -> list[dict]:
         try:
             resp = requests.get(NAROU_API_URL, params=params, timeout=30)
             resp.raise_for_status()
+            data = resp.json()
+            # jsonlite 形式: 先頭要素はメタ情報 {"allcount": N}
+            items = data[1:]
         except requests.exceptions.RequestException as e:
-            logger.error("なろう API リクエスト失敗 (st=%d): %s", start, e)
-            raise
-        data = resp.json()
-
-        # jsonlite 形式: 先頭要素はメタ情報 {"allcount": N}
-        items = data[1:]
+            logger.warning("なろうAPI リクエスト失敗（ページ %d）: %s", start, e)
+            break
+        except (ValueError, KeyError) as e:
+            logger.warning("なろうAPI レスポンス解析失敗（ページ %d）: %s", start, e)
+            break
         if not items:
             break
 

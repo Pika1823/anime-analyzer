@@ -8,9 +8,13 @@ on:
 jobs:
   update:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-python@v5
         with:
@@ -30,6 +34,7 @@ jobs:
 
       - name: 類似度スコア計算・JSON 生成
         run: python scripts/compute_similarity.py
+        continue-on-error: true
 
       - name: 変更をコミット・プッシュ
         run: |

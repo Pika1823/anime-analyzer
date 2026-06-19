@@ -238,6 +238,16 @@ def test_fetch_monthly_top_paginates_correctly():
     assert mock_get.call_count == 2
 
 
+def test_fetch_monthly_top_handles_json_decode_error(monkeypatch):
+    """APIがJSONではないレスポンスを返した場合、例外を発生させず空リストを返すことを確認する。"""
+    mock_resp = MagicMock()
+    mock_resp.raise_for_status = MagicMock()
+    mock_resp.json.side_effect = ValueError("JSONデコードエラー")
+    monkeypatch.setattr("fetch_narou.requests.get", lambda *a, **kw: mock_resp)
+    result = fetch_monthly_top(limit=10)
+    assert result == []
+
+
 # ---------------------------------------------------------------------------
 # main（monkeypatch による統合テスト）
 # ---------------------------------------------------------------------------
