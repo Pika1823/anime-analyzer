@@ -138,6 +138,40 @@ def test_fetch_archive_html_returns_none_on_error():
     assert result is None
 
 
+def test_fetch_archive_html_retries_on_ssl_error_then_succeeds():
+    """SSL エラー後に成功した場合、HTML が返ることを確認する。"""
+    import requests as req
+
+    mock_success = MagicMock()
+    mock_success.text = "<html>成功</html>"
+    mock_success.raise_for_status = MagicMock()
+
+    side_effects = [req.exceptions.SSLError("SSL エラー"), mock_success]
+
+    with patch("backfill_wayback.requests.get", side_effect=side_effects), \
+         patch("backfill_wayback.time.sleep") as mock_sleep:
+        result = fetch_archive_html("20240101120000")
+
+    assert result == "<html>成功</html>"
+    mock_sleep.assert_called_once()
+
+
+def test_fetch_archive_html_returns_none_after_max_ssl_retries():
+    """SSL エラーが FETCH_RETRY_MAX 回続いた場合に None を返すことを確認する。"""
+    import requests as req
+    import backfill_wayback
+
+    ssl_error = req.exceptions.SSLError("SSL EOF")
+
+    with patch("backfill_wayback.requests.get", side_effect=ssl_error), \
+         patch("backfill_wayback.time.sleep") as mock_sleep:
+        result = fetch_archive_html("20240101120000")
+
+    assert result is None
+    # FETCH_RETRY_MAX-1 回スリープして最後の試行で終了
+    assert mock_sleep.call_count == backfill_wayback.FETCH_RETRY_MAX - 1
+
+
 # ---------------------------------------------------------------------------
 # list_archive_urls — ページネーション
 # ---------------------------------------------------------------------------

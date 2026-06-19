@@ -22,6 +22,9 @@ CDX_API_URL = "https://web.archive.org/cdx/search/cdx"
 NAROU_RANKING_URL = "https://yomou.syosetu.com/rank/list/type/monthly_total/"
 # アーカイブ取得後のスリープ秒数（Wayback Machine のレート制限対策）
 WAYBACK_SLEEP_SEC = 3
+# SSL エラー時のリトライ設定（指数バックオフ: 10秒, 20秒, 40秒）
+FETCH_RETRY_MAX = 3
+FETCH_RETRY_SLEEP_BASE = 10
 
 
 def list_archive_urls(start: date, end: date) -> list[dict]:
@@ -70,15 +73,30 @@ def list_archive_urls(start: date, end: date) -> list[dict]:
 
 
 def fetch_archive_html(timestamp: str) -> str | None:
-    """Wayback Machine からアーカイブ HTML を取得する。"""
+    """Wayback Machine からアーカイブ HTML を取得する。SSL エラー時は指数バックオフでリトライ。"""
     url = f"https://web.archive.org/web/{timestamp}/{NAROU_RANKING_URL}"
-    try:
-        resp = requests.get(url, timeout=60)
-        resp.raise_for_status()
-        return resp.text
-    except Exception as e:
-        logger.warning("アーカイブ取得失敗 timestamp=%s: %s", timestamp, e)
-        return None
+
+    for attempt in range(FETCH_RETRY_MAX):
+        try:
+            resp = requests.get(url, timeout=60)
+            resp.raise_for_status()
+            return resp.text
+        except requests.exceptions.SSLError as e:
+            if attempt < FETCH_RETRY_MAX - 1:
+                wait = FETCH_RETRY_SLEEP_BASE * (2 ** attempt)
+                logger.warning(
+                    "アーカイブ取得 SSL エラー timestamp=%s (試行 %d/%d)、%d 秒後リトライ: %s",
+                    timestamp, attempt + 1, FETCH_RETRY_MAX, wait, e,
+                )
+                time.sleep(wait)
+            else:
+                logger.warning("アーカイブ取得失敗 timestamp=%s: %s", timestamp, e)
+                return None
+        except Exception as e:
+            logger.warning("アーカイブ取得失敗 timestamp=%s: %s", timestamp, e)
+            return None
+
+    return None
 
 
 def parse_ranking_html(html: str, snapshot_date: str) -> list[dict]:
