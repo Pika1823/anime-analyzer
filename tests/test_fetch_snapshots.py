@@ -64,6 +64,16 @@ def test_calc_daily_view_returns_zero_when_no_change():
     assert result == 0
 
 
+def test_calc_daily_view_handles_missing_allcount():
+    """allcount が None の場合はスキップされることを確認する。"""
+    # fetch_novel_snapshot が allcount なしの dict を返す場合
+    # main() 側でスキップされる（calc_daily_view には到達しない）
+    # このケースは main() のテストで確認するが、
+    # calc_daily_view に None を渡しても壊れないことを確認する
+    result = calc_daily_view("N001", None, pd.DataFrame(), date(2026, 6, 19))
+    assert result is None
+
+
 # ── fetch_novel_snapshot のテスト ─────────────────────────────────────────────
 
 def test_fetch_novel_snapshot_returns_dict_on_success():

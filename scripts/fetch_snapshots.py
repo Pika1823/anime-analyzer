@@ -103,7 +103,11 @@ def main() -> None:
         if detail is None:
             continue
 
-        cumulative_view = detail.get("allcount", 0)
+        cumulative_view = detail.get("allcount")
+        if cumulative_view is None:
+            logger.warning("ncode=%s: allcount フィールドが存在しないためスキップ", ncode)
+            continue
+
         daily_view = calc_daily_view(ncode, cumulative_view, snapshots, today)
 
         new_rows.append({
