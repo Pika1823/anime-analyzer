@@ -132,7 +132,11 @@ def test_fetch_trend_score_returns_false_when_keyword_not_in_df():
 # ---------------------------------------------------------------------------
 
 def test_main_calls_rate_limit_sleep_for_each_keyword(monkeypatch):
-    """main() が各キーワードのリクエスト後に rate_limit_sleep を呼ぶことを確認する。"""
+    """main() が成功したキーワードのリクエスト後に rate_limit_sleep を呼ぶことを確認する。
+
+    全件失敗の場合: 3回目エラーで give_up=True になり sleep はスキップされる。
+    novel(1) + anime(1) + anime(2) の順に処理されるが、3回目が give_up トリガーのため sleep は2回のみ。
+    """
     import fetch_trends
     from unittest.mock import MagicMock, patch
     import pandas as pd
@@ -149,7 +153,7 @@ def test_main_calls_rate_limit_sleep_for_each_keyword(monkeypatch):
     mock_sleep = MagicMock()
     mock_pytrends = MagicMock()
     mock_pytrends_class = MagicMock(return_value=mock_pytrends)
-    # fetch_trend_score を (空 scores, False) を返すようにモック
+    # 全件失敗: 1件目・2件目はsleep、3件目は give_up=True でsleepなし
     mock_fetch = MagicMock(return_value=({}, False))
 
     monkeypatch.setattr(fetch_trends, "is_weekly_run_day", lambda: True)
@@ -164,8 +168,80 @@ def test_main_calls_rate_limit_sleep_for_each_keyword(monkeypatch):
     with patch("fetch_trends.TrendReq", mock_pytrends_class):
         fetch_trends.main()
 
-    # novels 1キーワード + anime_works 2キーワード = 計3回
-    assert mock_sleep.call_count == 3
+    # 3回目エラーで give_up=True → sleep は2回のみ呼ばれる
+    assert mock_fetch.call_count == 3
+    assert mock_sleep.call_count == 2
+
+
+def test_main_stops_after_consecutive_errors(monkeypatch):
+    """3回連続エラーで残りの作品処理が打ち切られることを確認する。"""
+    import fetch_trends
+    from unittest.mock import MagicMock, patch
+    import pandas as pd
+
+    # novels: 5作品（3回エラーで打ち切りされるので後半はスキップされるはず）
+    novels_df = pd.DataFrame([
+        {"ncode": f"N{i:03d}", "title": f"テスト小説{i}"} for i in range(5)
+    ])
+    anime_df = pd.DataFrame(columns=["anime_id", "title_short", "title_full"])
+
+    mock_sleep = MagicMock()
+    mock_pytrends_class = MagicMock(return_value=MagicMock())
+    mock_fetch = MagicMock(return_value=({}, False))
+
+    monkeypatch.setattr(fetch_trends, "is_weekly_run_day", lambda: True)
+    monkeypatch.setattr(fetch_trends, "load_csv", lambda path, dtype=None: (
+        novels_df if "novels" in str(path) else
+        (anime_df if "anime_works" in str(path) else pd.DataFrame())
+    ))
+    monkeypatch.setattr(fetch_trends, "save_csv", MagicMock())
+    monkeypatch.setattr(fetch_trends, "rate_limit_sleep", mock_sleep)
+    monkeypatch.setattr(fetch_trends, "fetch_trend_score", mock_fetch)
+
+    with patch("fetch_trends.TrendReq", mock_pytrends_class):
+        fetch_trends.main()
+
+    # 3回エラーで打ち切り → fetch_trend_score は MAX_CONSECUTIVE_ERRORS 回だけ呼ばれる
+    assert mock_fetch.call_count == fetch_trends.MAX_CONSECUTIVE_ERRORS
+
+
+def test_main_resets_consecutive_errors_on_success(monkeypatch):
+    """成功が挟まると連続エラーカウンタがリセットされることを確認する。"""
+    import fetch_trends
+    from unittest.mock import MagicMock, patch
+    import pandas as pd
+
+    # novels: 5作品
+    novels_df = pd.DataFrame([
+        {"ncode": f"N{i:03d}", "title": f"テスト小説{i}"} for i in range(5)
+    ])
+    anime_df = pd.DataFrame(columns=["anime_id", "title_short", "title_full"])
+
+    mock_sleep = MagicMock()
+    mock_pytrends_class = MagicMock(return_value=MagicMock())
+
+    # 失敗・失敗・成功・失敗・失敗 の順 → 成功でリセット後また2回エラーなので打ち切りにはならない
+    side_effects = [
+        ({}, False), ({}, False),
+        ({"2026-01-01": 50}, True),
+        ({}, False), ({}, False),
+    ]
+    mock_fetch = MagicMock(side_effect=side_effects)
+
+    monkeypatch.setattr(fetch_trends, "is_weekly_run_day", lambda: True)
+    monkeypatch.setattr(fetch_trends, "load_csv", lambda path, dtype=None: (
+        novels_df if "novels" in str(path) else
+        (anime_df if "anime_works" in str(path) else pd.DataFrame())
+    ))
+    monkeypatch.setattr(fetch_trends, "save_csv", MagicMock())
+    monkeypatch.setattr(fetch_trends, "rate_limit_sleep", mock_sleep)
+    monkeypatch.setattr(fetch_trends, "fetch_trend_score", mock_fetch)
+
+    with patch("fetch_trends.TrendReq", mock_pytrends_class):
+        fetch_trends.main()
+
+    # 成功でリセットされたので全5件処理される（打ち切りなし）
+    assert mock_fetch.call_count == 5
 
 
 def test_main_skips_on_non_weekly_day(monkeypatch):

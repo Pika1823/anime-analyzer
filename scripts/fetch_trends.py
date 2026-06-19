@@ -26,6 +26,8 @@ logger = get_logger(__name__)
 REGION = "JP"
 # 取得期間: 直近3ヶ月
 TIMEFRAME = "today 3-m"
+# この回数連続でエラーが発生したら残りの取得を打ち切る
+MAX_CONSECUTIVE_ERRORS = 3
 
 
 def get_week_start(d: date) -> str:
@@ -115,21 +117,41 @@ def main() -> None:
     new_rows: list[dict] = []
     week_start = get_week_start(date.today())
 
+    # 連続エラーが MAX_CONSECUTIVE_ERRORS 回に達したら残り全件をスキップする
+    consecutive_errors = 0
+    give_up = False
+
     # novels: title を1キーワードとして使用
     for _, row in novels.iterrows():
+        if give_up:
+            break
         ncode = str(row["ncode"])
         keyword = str(row["title"])
         if (week_start, ncode, keyword) in existing_keys:
             logger.debug("スキップ（既存）: ncode=%s keyword=%s", ncode, keyword)
             continue
         scores, success = fetch_trend_score(pytrends, keyword)
+        if success:
+            consecutive_errors = 0
+        else:
+            consecutive_errors += 1
+            if consecutive_errors >= MAX_CONSECUTIVE_ERRORS:
+                logger.warning(
+                    "連続 %d 回エラーのため残りの Trends 取得をスキップします", MAX_CONSECUTIVE_ERRORS
+                )
+                give_up = True
         new_rows.extend(build_trend_rows(ncode, "novel", keyword, scores, success, week_start=week_start))
-        rate_limit_sleep()
+        if not give_up:
+            rate_limit_sleep()
 
     # anime_works: title_short と title_full の2キーワードを順番に取得
     for _, row in anime_works.iterrows():
+        if give_up:
+            break
         anime_id = str(row["anime_id"])
         for keyword in [row.get("title_short", ""), row.get("title_full", "")]:
+            if give_up:
+                break
             # NaN や空文字はスキップ
             if not keyword or pd.isna(keyword):
                 continue
@@ -138,10 +160,20 @@ def main() -> None:
                 logger.debug("スキップ（既存）: anime_id=%s keyword=%s", anime_id, keyword)
                 continue
             scores, success = fetch_trend_score(pytrends, keyword)
+            if success:
+                consecutive_errors = 0
+            else:
+                consecutive_errors += 1
+                if consecutive_errors >= MAX_CONSECUTIVE_ERRORS:
+                    logger.warning(
+                        "連続 %d 回エラーのため残りの Trends 取得をスキップします", MAX_CONSECUTIVE_ERRORS
+                    )
+                    give_up = True
             new_rows.extend(
                 build_trend_rows(anime_id, "anime", keyword, scores, success, week_start=week_start)
             )
-            rate_limit_sleep()
+            if not give_up:
+                rate_limit_sleep()
 
     if new_rows:
         new_df = pd.DataFrame(new_rows)
