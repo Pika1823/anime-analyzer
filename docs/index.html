@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>なろう小説 アニメ化ポテンシャル分析</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4" defer></script>
+  <script src="js/app.js" defer></script>
+</head>
+<body>
+
+<header>
+  <h1>なろう小説 アニメ化ポテンシャル分析</h1>
+  <nav>
+    <button class="tab-btn active" data-tab="ranking">類似度ランキング</button>
+    <button class="tab-btn" data-tab="comparison">比較グラフ</button>
+    <button class="tab-btn" data-tab="trends">Trends 比較</button>
+    <button class="tab-btn" data-tab="settings">⚙ 設定</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- Tab 1: 類似度ランキング -->
+  <section id="tab-ranking" class="tab-panel active">
+    <h2 class="section-title">未アニメ化作品 類似度ランキング</h2>
+
+    <div class="filter-bar">
+      <label>
+        ジャンル:
+        <select id="filter-genre">
+          <option value="すべて">すべて</option>
+        </select>
+      </label>
+      <label>
+        <input
+          type="range"
+          id="filter-score"
+          min="0"
+          max="1"
+          step="0.01"
+          value="0"
+        />
+        <span id="filter-score-label" class="range-label">スコア閾値: 0.00 以上</span>
+      </label>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>順位</th>
+            <th>タイトル</th>
+            <th>ジャンル</th>
+            <th>月刊順位</th>
+            <th>スコア</th>
+            <th>最類似アニメ</th>
+          </tr>
+        </thead>
+        <tbody id="ranking-body">
+          <tr>
+            <td colspan="6" class="placeholder">データを読み込み中です...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Tab 2: 比較グラフ -->
+  <section id="tab-comparison" class="tab-panel">
+    <h2 class="section-title">比較グラフ</h2>
+    <div id="comparison-content">
+      <p class="placeholder">左のランキングから作品を選択してください</p>
+    </div>
+  </section>
+
+  <!-- Tab 3: Trends 比較 -->
+  <section id="tab-trends" class="tab-panel">
+    <h2 class="section-title">Google Trends 比較</h2>
+
+    <div class="trends-controls">
+      <label>
+        小説:
+        <select id="trends-novel-select">
+          <option value="">小説を選択...</option>
+        </select>
+      </label>
+      <label>
+        アニメ:
+        <select id="trends-anime-select">
+          <option value="">アニメを選択...</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="chart-container" id="trends-chart-container">
+      <p class="placeholder">Trendsデータ収集中です。</p>
+    </div>
+  </section>
+
+  <!-- Tab 4: 設定 -->
+  <section id="tab-settings" class="tab-panel">
+    <h2 class="section-title">Pattern 1 スコア重み設定</h2>
+
+    <div class="settings-card">
+      <div class="weight-row">
+        <label for="weight-genre">ジャンル一致</label>
+        <input type="range" id="weight-genre" min="0" max="100" step="1" value="30" />
+        <span class="weight-val" id="weight-genre-val">30%</span>
+      </div>
+      <div class="weight-row">
+        <label for="weight-tag">タグ類似度</label>
+        <input type="range" id="weight-tag" min="0" max="100" step="1" value="25" />
+        <span class="weight-val" id="weight-tag-val">25%</span>
+      </div>
+      <div class="weight-row">
+        <label for="weight-rank">ランク帯</label>
+        <input type="range" id="weight-rank" min="0" max="100" step="1" value="20" />
+        <span class="weight-val" id="weight-rank-val">20%</span>
+      </div>
+      <div class="weight-row">
+        <label for="weight-bmView">BM/View比率</label>
+        <input type="range" id="weight-bmView" min="0" max="100" step="1" value="15" />
+        <span class="weight-val" id="weight-bmView-val">15%</span>
+      </div>
+      <div class="weight-row">
+        <label for="weight-growth">View成長率</label>
+        <input type="range" id="weight-growth" min="0" max="100" step="1" value="10" />
+        <span class="weight-val" id="weight-growth-val">10%</span>
+      </div>
+
+      <p class="weight-total" id="weight-total">合計: 100%</p>
+
+      <button class="btn btn-primary" id="btn-apply-weights">適用してランキングを更新</button>
+      <button class="btn btn-secondary" id="btn-reset-weights">デフォルトに戻す</button>
+    </div>
+  </section>
+
+</main>
+
+</body>
+</html>
