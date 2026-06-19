@@ -277,3 +277,18 @@ def test_main_reapplies_is_anime_after_upsert(tmp_path, monkeypatch):
     fetch_narou.main()
     # anime_ncodes に N001 が含まれないので is_anime = False になること
     assert saved["df"].iloc[0]["is_anime"] is False or saved["df"].iloc[0]["is_anime"] == False  # noqa: E712
+
+
+def test_main_skips_save_when_api_returns_zero_items(tmp_path, monkeypatch):
+    """API が0件を返した場合、save_csv を呼ばずにスキップすることを確認する。"""
+    import fetch_narou
+
+    monkeypatch.setattr(fetch_narou, "is_weekly_run_day", lambda: True)
+    monkeypatch.setattr(fetch_narou, "fetch_monthly_top", lambda: [])
+    monkeypatch.setattr(fetch_narou, "load_csv", lambda *a, **kw: pd.DataFrame())
+
+    saved = {"called": False}
+    monkeypatch.setattr(fetch_narou, "save_csv", lambda df, path: saved.update({"called": True}))
+
+    fetch_narou.main()
+    assert not saved["called"], "0件取得時は save_csv を呼び出してはいけない"

@@ -23,6 +23,8 @@ logger = get_logger(__name__)
 NAROU_PAGE_SIZE = 100
 # 取得する月刊ランキングの最大件数
 NAROU_MAX_COUNT = 1000
+# なろうAPI リクエスト時の User-Agent（API 規約上の識別子として送信）
+NAROU_USER_AGENT = "anime-analyser/1.0"
 
 
 def fetch_monthly_top(limit: int = NAROU_MAX_COUNT) -> list[dict]:
@@ -46,7 +48,12 @@ def fetch_monthly_top(limit: int = NAROU_MAX_COUNT) -> list[dict]:
             "st": start,
         }
         try:
-            resp = requests.get(NAROU_API_URL, params=params, timeout=30)
+            resp = requests.get(
+                NAROU_API_URL,
+                params=params,
+                headers={"User-Agent": NAROU_USER_AGENT},
+                timeout=30,
+            )
             resp.raise_for_status()
             data = resp.json()
             # jsonlite 形式: 先頭要素はメタ情報 {"allcount": N}
@@ -144,6 +151,9 @@ def main() -> None:
     logger.info("なろう API から月刊TOP%d を取得開始", NAROU_MAX_COUNT)
     raw = fetch_monthly_top()
     logger.info("取得件数: %d", len(raw))
+    if not raw:
+        logger.warning("取得件数が0件のため novels.csv の更新をスキップします")
+        return
 
     # アニメ化済み作品の ncode セットを構築
     anime_works = load_csv(ANIME_WORKS_CSV)
