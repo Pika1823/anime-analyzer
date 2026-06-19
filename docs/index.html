@@ -42,14 +42,14 @@
           <div class="score-factors">
             <div class="factor-row">
               <span class="factor-label">ジャンル一致</span>
-              <div class="factor-bar-bg"><div class="factor-bar" style="width:60%"></div></div>
-              <span class="factor-weight">30%</span>
+              <div class="factor-bar-bg"><div class="factor-bar" style="width:50%"></div></div>
+              <span class="factor-weight">25%</span>
               <span class="factor-desc">ファンタジー・恋愛など大分類が同じか</span>
             </div>
             <div class="factor-row">
               <span class="factor-label">タグ類似度</span>
-              <div class="factor-bar-bg"><div class="factor-bar" style="width:50%"></div></div>
-              <span class="factor-weight">25%</span>
+              <div class="factor-bar-bg"><div class="factor-bar" style="width:40%"></div></div>
+              <span class="factor-weight">20%</span>
               <span class="factor-desc">「転生」「異世界」など共通キーワードの割合</span>
             </div>
             <div class="factor-row">
@@ -69,6 +69,12 @@
               <div class="factor-bar-bg"><div class="factor-bar" style="width:20%"></div></div>
               <span class="factor-weight">10%</span>
               <span class="factor-desc">直近6ヶ月の閲覧数の伸び（データ蓄積後に有効）</span>
+            </div>
+            <div class="factor-row">
+              <span class="factor-label">評価件数</span>
+              <div class="factor-bar-bg"><div class="factor-bar" style="width:20%"></div></div>
+              <span class="factor-weight">10%</span>
+              <span class="factor-desc">累計評価件数（1000件で満点 — いいね数の代替）</span>
             </div>
           </div>
           <p class="info-note">⚙ 設定タブで各項目の重みを自由に変更できます</p>
@@ -94,6 +100,14 @@
         />
         <span id="filter-score-label" class="range-label">スコア閾値: 0.00 以上</span>
       </label>
+      <label class="filter-check">
+        <input type="checkbox" id="filter-top10" />
+        過去TOP10入り実績あり
+      </label>
+      <label class="filter-check">
+        <input type="checkbox" id="filter-unadapted" checked />
+        未アニメ化のみ
+      </label>
     </div>
 
     <div class="table-wrap">
@@ -117,6 +131,12 @@
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <div class="pagination" id="pagination">
+      <button class="btn btn-secondary" id="prev-page" disabled>← 前へ</button>
+      <span class="page-info" id="page-info"></span>
+      <button class="btn btn-secondary" id="next-page" disabled>次へ →</button>
     </div>
   </section>
 
@@ -157,7 +177,7 @@
     <h2 class="section-title">Pattern 1 スコア重み設定</h2>
 
     <p class="settings-desc">
-      類似度スコアを構成する5つの指標のウェイトを変更できます。<br>
+      類似度スコアを構成する6つの指標のウェイトを変更できます。<br>
       重みの合計が <strong>100%</strong> になるよう調整し、「適用」を押すとランキングがリアルタイムで更新されます。
       設定はブラウザに保存されます。
     </p>
@@ -168,16 +188,16 @@
           <label for="weight-genre">ジャンル一致</label>
           <span class="weight-hint">同じ大分類（ファンタジー・恋愛等）かどうか</span>
         </div>
-        <input type="range" id="weight-genre" min="0" max="100" step="1" value="30" />
-        <span class="weight-val" id="weight-genre-val">30%</span>
+        <input type="range" id="weight-genre" min="0" max="100" step="1" value="25" />
+        <span class="weight-val" id="weight-genre-val">25%</span>
       </div>
       <div class="weight-row">
         <div class="weight-label-wrap">
           <label for="weight-tag">タグ類似度</label>
           <span class="weight-hint">共通タグの割合（Jaccard係数）</span>
         </div>
-        <input type="range" id="weight-tag" min="0" max="100" step="1" value="25" />
-        <span class="weight-val" id="weight-tag-val">25%</span>
+        <input type="range" id="weight-tag" min="0" max="100" step="1" value="20" />
+        <span class="weight-val" id="weight-tag-val">20%</span>
       </div>
       <div class="weight-row">
         <div class="weight-label-wrap">
@@ -202,6 +222,14 @@
         </div>
         <input type="range" id="weight-growth" min="0" max="100" step="1" value="10" />
         <span class="weight-val" id="weight-growth-val">10%</span>
+      </div>
+      <div class="weight-row">
+        <div class="weight-label-wrap">
+          <label for="weight-eval">評価件数</label>
+          <span class="weight-hint">累計評価件数（1000件で満点 — いいね数の代替）</span>
+        </div>
+        <input type="range" id="weight-eval" min="0" max="100" step="1" value="10" />
+        <span class="weight-val" id="weight-eval-val">10%</span>
       </div>
 
       <p class="weight-total" id="weight-total">合計: 100%</p>

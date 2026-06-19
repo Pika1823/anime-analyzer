@@ -16,6 +16,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from compute_similarity import (
     calc_bm_view_score,
+    calc_best_rank_ever,
+    calc_eval_score,
     calc_pattern1_score,
     calc_rank_score,
     calc_tag_jaccard,
@@ -75,6 +77,52 @@ def test_calc_rank_score_none():
     assert calc_rank_score(None) == 0.0
 
 
+# --- calc_eval_score ---
+
+def test_calc_eval_score_zero():
+    """評価件数 0 は 0.0 を返す。"""
+    assert calc_eval_score(0) == 0.0
+
+
+def test_calc_eval_score_half():
+    """評価件数 500 は 0.5 を返す。"""
+    assert calc_eval_score(500) == 0.5
+
+
+def test_calc_eval_score_max():
+    """評価件数 1000 以上は 1.0 を返す。"""
+    assert calc_eval_score(1000) == 1.0
+    assert calc_eval_score(2000) == 1.0
+
+
+def test_calc_eval_score_none():
+    """評価件数 None は 0.0 を返す。"""
+    assert calc_eval_score(None) == 0.0
+
+
+# --- calc_best_rank_ever ---
+
+def test_calc_best_rank_ever_returns_min():
+    """スナップショットの最高ランク（最小値）を返す。"""
+    snaps = pd.DataFrame([
+        {"ncode": "N001", "monthly_rank": 50},
+        {"ncode": "N001", "monthly_rank": 8},
+        {"ncode": "N001", "monthly_rank": 25},
+    ])
+    assert calc_best_rank_ever("N001", snaps) == 8
+
+
+def test_calc_best_rank_ever_empty_snapshots():
+    """スナップショットが空の場合は None を返す。"""
+    assert calc_best_rank_ever("N001", pd.DataFrame()) is None
+
+
+def test_calc_best_rank_ever_ncode_not_found():
+    """該当 ncode がない場合は None を返す。"""
+    snaps = pd.DataFrame([{"ncode": "N999", "monthly_rank": 10}])
+    assert calc_best_rank_ever("N001", snaps) is None
+
+
 # --- calc_bm_view_score ---
 
 def test_calc_bm_view_score_normal():
@@ -108,14 +156,15 @@ def test_calc_pattern1_score_returns_dict():
         novel_rank=50,
         novel_bm_view_score=0.5,
         novel_growth=0.1,
+        novel_eval_score=0.5,
         anime=anime,
     )
-    expected_keys = {"anime_id", "anime_title", "score", "genre_score", "tag_score", "rank_score", "bm_view_score", "growth_score"}
+    expected_keys = {"anime_id", "anime_title", "score", "genre_score", "tag_score", "rank_score", "bm_view_score", "growth_score", "eval_score"}
     assert expected_keys == set(result.keys())
 
 
 def test_calc_pattern1_score_genre_match_increases_score():
-    """ジャンル一致の場合、スコアに 0.3（genre 重み）が加算される。"""
+    """ジャンル一致の場合、スコアに 0.25（genre 重み）が加算される。"""
     anime = _make_anime_series(genre="ファンタジー", tags="")
     match_result = calc_pattern1_score(
         novel_genre_label="ファンタジー",
@@ -123,6 +172,7 @@ def test_calc_pattern1_score_genre_match_increases_score():
         novel_rank=None,
         novel_bm_view_score=0.0,
         novel_growth=0.0,
+        novel_eval_score=0.0,
         anime=anime,
     )
     nomatch_result = calc_pattern1_score(
@@ -131,9 +181,10 @@ def test_calc_pattern1_score_genre_match_increases_score():
         novel_rank=None,
         novel_bm_view_score=0.0,
         novel_growth=0.0,
+        novel_eval_score=0.0,
         anime=anime,
     )
-    assert abs(match_result["score"] - nomatch_result["score"] - 0.30) < 1e-9
+    assert abs(match_result["score"] - nomatch_result["score"] - 0.25) < 1e-9
 
 
 # --- main 統合テスト ---
@@ -155,9 +206,9 @@ def test_main_generates_json_files(tmp_path, monkeypatch):
     novels_path = tmp_path / "novels.csv"
     anime_path = tmp_path / "anime_works.csv"
     _write_csv(novels_path, (
-        "ncode,title,author,genre,tags,is_anime,anime_id,monthly_rank_latest,bookmark_count_latest,updated_at\n"
-        "N0001AA,テスト小説1,著者A,101,転生 異世界,False,,50,1000,2026-06-01\n"
-        "N0002AB,テスト小説2,著者B,101,転生 異世界,True,slime_001,10,5000,2026-06-01\n"
+        "ncode,title,author,genre,tags,is_anime,anime_id,monthly_rank_latest,bookmark_count_latest,weekly_unique_latest,all_point_latest,all_hyoka_cnt_latest,episode_count_latest,updated_at\n"
+        "N0001AA,テスト小説1,著者A,101,転生 異世界,False,,50,1000,5000,2000,300,100,2026-06-01\n"
+        "N0002AB,テスト小説2,著者B,101,転生 異世界,True,slime_001,10,5000,10000,5000,800,200,2026-06-01\n"
     ))
     _write_csv(anime_path, (
         "anime_id,anime_title,title_short,title_full,ncode,source_type,air_date,season,studio,genre_manual,tags_manual\n"
@@ -199,8 +250,8 @@ def test_main_handles_missing_snapshots(tmp_path, monkeypatch):
     novels_path = tmp_path / "novels.csv"
     anime_path = tmp_path / "anime_works.csv"
     _write_csv(novels_path, (
-        "ncode,title,author,genre,tags,is_anime,anime_id,monthly_rank_latest,bookmark_count_latest,updated_at\n"
-        "N0001AA,テスト小説1,著者A,101,転生 異世界,False,,50,1000,2026-06-01\n"
+        "ncode,title,author,genre,tags,is_anime,anime_id,monthly_rank_latest,bookmark_count_latest,weekly_unique_latest,all_point_latest,all_hyoka_cnt_latest,episode_count_latest,updated_at\n"
+        "N0001AA,テスト小説1,著者A,101,転生 異世界,False,,50,1000,5000,2000,300,100,2026-06-01\n"
     ))
     _write_csv(anime_path, (
         "anime_id,anime_title,title_short,title_full,ncode,source_type,air_date,season,studio,genre_manual,tags_manual\n"

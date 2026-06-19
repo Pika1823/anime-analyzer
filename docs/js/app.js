@@ -4,13 +4,17 @@
 let novelsData = null;
 let trendsData = null;
 let selectedNcode = null;
-let currentWeights = { genre: 30, tag: 25, rank: 20, bmView: 15, growth: 10 };
+let currentWeights = { genre: 25, tag: 20, rank: 20, bmView: 15, growth: 10, eval: 10 };
+
+// ページネーション
+let currentPage = 0;
+const PAGE_SIZE = 100;
 
 // Chart.js インスタンス（再描画時に破棄する）
 let comparisonChart = null;
 let trendsChart = null;
 
-const DEFAULT_WEIGHTS = { genre: 30, tag: 25, rank: 20, bmView: 15, growth: 10 };
+const DEFAULT_WEIGHTS = { genre: 25, tag: 20, rank: 20, bmView: 15, growth: 10, eval: 10 };
 const LS_KEY = 'animeTool.weights';
 
 // ---- データ読み込み ----
@@ -62,7 +66,8 @@ function calcScore(novel, weights) {
         entry.tag_score * weights.tag +
         entry.rank_score * weights.rank +
         entry.bm_view_score * weights.bmView +
-        entry.growth_score * weights.growth) /
+        entry.growth_score * weights.growth +
+        (entry.eval_score || 0) * (weights.eval || 0)) /
       100;
     if (s > best.score) {
       best = { score: s, animeId: entry.anime_id, animeTitle: entry.anime_title };
@@ -78,21 +83,16 @@ function renderRanking(weights) {
   if (!novelsData || !novelsData.novels) {
     tbody.innerHTML =
       '<tr><td colspan="6" class="placeholder">データ収集中です。</td></tr>';
+    renderPagination(0, 0);
     return;
   }
 
-  const unadapted = novelsData.novels.filter((n) => !n.is_anime);
-  if (unadapted.length === 0) {
-    tbody.innerHTML =
-      '<tr><td colspan="6" class="placeholder">未アニメ化作品が見つかりません。</td></tr>';
-    return;
-  }
-
-  // ジャンルフィルター選択肢を構築
+  // ジャンルフィルター選択肢を構築（未アニメ化全体から）
   const genreSelect = document.getElementById('filter-genre');
   const currentGenre = genreSelect.value;
   if (genreSelect.options.length <= 1) {
-    const genres = [...new Set(unadapted.map((n) => n.genre_label).filter(Boolean))].sort();
+    const allNovels = novelsData.novels.filter((n) => !n.is_anime);
+    const genres = [...new Set(allNovels.map((n) => n.genre_label).filter(Boolean))].sort();
     genres.forEach((g) => {
       const opt = document.createElement('option');
       opt.value = g;
@@ -104,16 +104,20 @@ function renderRanking(weights) {
 
   const scoreThreshold = parseFloat(document.getElementById('filter-score').value);
   const selectedGenre = genreSelect.value;
+  const filterTop10 = document.getElementById('filter-top10').checked;
+  const filterUnadapted = document.getElementById('filter-unadapted').checked;
 
   // スコア再計算と並び替え
-  const ranked = unadapted
+  const ranked = novelsData.novels
     .map((n) => {
       const { score, animeId, animeTitle } = calcScore(n, weights);
       return { ...n, _score: score, _animeId: animeId, _animeTitle: animeTitle };
     })
     .filter((n) => {
+      if (filterUnadapted && n.is_anime) return false;
       if (n._score < scoreThreshold) return false;
       if (selectedGenre && selectedGenre !== 'すべて' && n.genre_label !== selectedGenre) return false;
+      if (filterTop10 && (n.best_rank_ever == null || n.best_rank_ever > 10)) return false;
       return true;
     })
     .sort((a, b) => b._score - a._score);
@@ -121,15 +125,22 @@ function renderRanking(weights) {
   if (ranked.length === 0) {
     tbody.innerHTML =
       '<tr><td colspan="6" class="placeholder">条件に合う作品がありません。</td></tr>';
+    renderPagination(0, 0);
     return;
   }
 
-  tbody.innerHTML = ranked
+  const totalPages = Math.ceil(ranked.length / PAGE_SIZE);
+  if (currentPage >= totalPages) currentPage = 0;
+
+  const pageItems = ranked.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
+  const pageOffset = currentPage * PAGE_SIZE;
+
+  tbody.innerHTML = pageItems
     .map((n, i) => {
       const scorePct = Math.round(n._score * 100);
       const barWidth = Math.max(2, scorePct);
       return `<tr data-ncode="${n.ncode}" data-anime-id="${n._animeId || ''}">
-        <td>${i + 1}</td>
+        <td>${pageOffset + i + 1}</td>
         <td>${escHtml(n.title)}</td>
         <td>${escHtml(n.genre_label || '—')}</td>
         <td>${n.monthly_rank_latest != null ? n.monthly_rank_latest : '—'}</td>
@@ -144,6 +155,8 @@ function renderRanking(weights) {
     })
     .join('');
 
+  renderPagination(currentPage, totalPages, ranked.length);
+
   // 行クリック → 比較グラフへ
   tbody.querySelectorAll('tr[data-ncode]').forEach((row) => {
     row.addEventListener('click', () => {
@@ -153,6 +166,26 @@ function renderRanking(weights) {
       renderComparison(ncode);
     });
   });
+}
+
+// ---- ページネーション描画 ----
+function renderPagination(page, totalPages, total) {
+  const info = document.getElementById('page-info');
+  const prevBtn = document.getElementById('prev-page');
+  const nextBtn = document.getElementById('next-page');
+
+  if (!info || !prevBtn || !nextBtn) return;
+
+  if (totalPages <= 0) {
+    info.textContent = '';
+    prevBtn.disabled = true;
+    nextBtn.disabled = true;
+    return;
+  }
+
+  info.textContent = `${page + 1} / ${totalPages} ページ（合計 ${total} 件）`;
+  prevBtn.disabled = page === 0;
+  nextBtn.disabled = page >= totalPages - 1;
 }
 
 // ---- View 2: 比較グラフ ----
@@ -209,7 +242,7 @@ function renderScoreBreakdown(entry, animeTitle) {
   comparisonChart = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: ['ジャンル', 'タグ', 'ランク', 'BM/View比率', 'View成長率'],
+      labels: ['ジャンル', 'タグ', 'ランク', 'BM/View比率', 'View成長率', '評価件数'],
       datasets: [
         {
           label: `スコア内訳（vs ${animeTitle}）`,
@@ -219,6 +252,7 @@ function renderScoreBreakdown(entry, animeTitle) {
             entry.rank_score,
             entry.bm_view_score,
             entry.growth_score,
+            entry.eval_score || 0,
           ],
           backgroundColor: [
             '#e94560cc',
@@ -226,6 +260,7 @@ function renderScoreBreakdown(entry, animeTitle) {
             '#16213ecc',
             '#533483cc',
             '#05c46bcc',
+            '#f5a623cc',
           ],
           borderRadius: 4,
         },
@@ -382,7 +417,7 @@ function renderSettings() {
 }
 
 function updateWeightUI() {
-  const keys = ['genre', 'tag', 'rank', 'bmView', 'growth'];
+  const keys = ['genre', 'tag', 'rank', 'bmView', 'growth', 'eval'];
   keys.forEach((k) => {
     const slider = document.getElementById(`weight-${k}`);
     const valEl = document.getElementById(`weight-${k}-val`);
@@ -393,7 +428,7 @@ function updateWeightUI() {
 }
 
 function updateWeightTotal() {
-  const keys = ['genre', 'tag', 'rank', 'bmView', 'growth'];
+  const keys = ['genre', 'tag', 'rank', 'bmView', 'growth', 'eval'];
   const total = keys.reduce((sum, k) => {
     const el = document.getElementById(`weight-${k}`);
     return sum + (el ? parseInt(el.value, 10) : currentWeights[k]);
@@ -406,7 +441,7 @@ function updateWeightTotal() {
 }
 
 function applyWeights() {
-  const keys = ['genre', 'tag', 'rank', 'bmView', 'growth'];
+  const keys = ['genre', 'tag', 'rank', 'bmView', 'growth', 'eval'];
   const newWeights = {};
   let total = 0;
   keys.forEach((k) => {
@@ -440,7 +475,7 @@ function loadWeights() {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return { ...DEFAULT_WEIGHTS };
     const parsed = JSON.parse(raw);
-    const keys = ['genre', 'tag', 'rank', 'bmView', 'growth'];
+    const keys = ['genre', 'tag', 'rank', 'bmView', 'growth', 'eval'];
     if (keys.every((k) => typeof parsed[k] === 'number')) return parsed;
   } catch (_) {}
   return { ...DEFAULT_WEIGHTS };
@@ -477,6 +512,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ジャンルフィルター
   document.getElementById('filter-genre').addEventListener('change', () => {
+    currentPage = 0;
     renderRanking(currentWeights);
   });
 
@@ -485,11 +521,34 @@ document.addEventListener('DOMContentLoaded', () => {
   const scoreLabel = document.getElementById('filter-score-label');
   scoreSlider.addEventListener('input', () => {
     scoreLabel.textContent = `スコア閾値: ${parseFloat(scoreSlider.value).toFixed(2)} 以上`;
+    currentPage = 0;
+    renderRanking(currentWeights);
+  });
+
+  // チェックボックスフィルター
+  document.getElementById('filter-top10').addEventListener('change', () => {
+    currentPage = 0;
+    renderRanking(currentWeights);
+  });
+  document.getElementById('filter-unadapted').addEventListener('change', () => {
+    currentPage = 0;
+    renderRanking(currentWeights);
+  });
+
+  // ページネーションボタン
+  document.getElementById('prev-page').addEventListener('click', () => {
+    if (currentPage > 0) {
+      currentPage--;
+      renderRanking(currentWeights);
+    }
+  });
+  document.getElementById('next-page').addEventListener('click', () => {
+    currentPage++;
     renderRanking(currentWeights);
   });
 
   // 重みスライダーのリアルタイム更新
-  ['genre', 'tag', 'rank', 'bmView', 'growth'].forEach((k) => {
+  ['genre', 'tag', 'rank', 'bmView', 'growth', 'eval'].forEach((k) => {
     const el = document.getElementById(`weight-${k}`);
     if (el) {
       el.addEventListener('input', () => {

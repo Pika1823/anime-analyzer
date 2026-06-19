@@ -121,6 +121,10 @@ def build_novels_df(raw: list[dict], anime_ncodes: set[str]) -> pd.DataFrame:
                 "anime_id": "",
                 "monthly_rank_latest": rank,
                 "bookmark_count_latest": item.get("bookmarkcount", 0),
+                "weekly_unique_latest": int(item.get("weekly_unique") or 0),
+                "all_point_latest": int(item.get("all_point") or 0),
+                "all_hyoka_cnt_latest": int(item.get("all_hyoka_cnt") or 0),
+                "episode_count_latest": int(item.get("general_all_no") or 0),
                 "updated_at": today,
             }
         )

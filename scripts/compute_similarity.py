@@ -55,11 +55,12 @@ NAROU_GENRE_CATEGORY: dict[str, str] = {
 
 # Pattern1 スコア計算の重みパラメータ（仮説ベース）
 DEFAULT_WEIGHTS: dict[str, float] = {
-    "genre": 0.30,
-    "tag": 0.25,
-    "rank": 0.20,
+    "genre":   0.25,
+    "tag":     0.20,
+    "rank":    0.20,
     "bm_view": 0.15,
-    "growth": 0.10,
+    "growth":  0.10,
+    "eval":    0.10,  # 評価件数（いいね数代替）スコア
 }
 
 # 出力 JSON ファイルパス（GitHub Pages から参照するため docs/data/ に出力）
@@ -105,6 +106,25 @@ def calc_bm_view_score(bookmark: int | float, cumulative_view: int | float | Non
         return 0.0
     ratio = float(bookmark) / float(cumulative_view)
     return min(1.0, ratio / 0.05)
+
+
+def calc_eval_score(all_hyoka_cnt: int | float | None) -> float:
+    """評価件数スコアを計算する（1000件で満点）。"""
+    if all_hyoka_cnt is None or (isinstance(all_hyoka_cnt, float) and math.isnan(all_hyoka_cnt)):
+        return 0.0
+    return min(1.0, float(all_hyoka_cnt) / 1000.0)
+
+
+def calc_best_rank_ever(ncode: str, snapshots: pd.DataFrame) -> int | None:
+    """スナップショット全体での最高月間ランクを返す（値が小さいほど良い順位）。"""
+    if snapshots.empty or "ncode" not in snapshots.columns:
+        return None
+    rows = snapshots[
+        (snapshots["ncode"] == ncode) & snapshots["monthly_rank"].notna()
+    ]
+    if rows.empty:
+        return None
+    return int(rows["monthly_rank"].min())
 
 
 def calc_view_growth(ncode: str, snapshots: pd.DataFrame) -> float:
@@ -166,6 +186,7 @@ def calc_pattern1_score(
     novel_rank: int | float | None,
     novel_bm_view_score: float,
     novel_growth: float,
+    novel_eval_score: float,
     anime: pd.Series,
 ) -> dict:
     """Pattern1 スコアを計算する。各コンポーネントスコアと合計スコアを辞書で返す。"""
@@ -184,12 +205,16 @@ def calc_pattern1_score(
     # 成長スコアはそのまま使用
     growth_score = novel_growth
 
+    # 評価件数スコアはそのまま使用
+    eval_score = novel_eval_score
+
     score = (
         DEFAULT_WEIGHTS["genre"] * genre_score
         + DEFAULT_WEIGHTS["tag"] * tag_score
         + DEFAULT_WEIGHTS["rank"] * rank_score
         + DEFAULT_WEIGHTS["bm_view"] * bm_view_score
         + DEFAULT_WEIGHTS["growth"] * growth_score
+        + DEFAULT_WEIGHTS["eval"] * eval_score
     )
 
     return {
@@ -201,6 +226,7 @@ def calc_pattern1_score(
         "rank_score": round(rank_score, 4),
         "bm_view_score": round(bm_view_score, 4),
         "growth_score": round(growth_score, 4),
+        "eval_score": round(eval_score, 4),
     }
 
 
@@ -272,6 +298,13 @@ def main() -> None:
         novel_tags = str(novel.get("tags", "")) if not (isinstance(novel.get("tags"), float) and math.isnan(novel.get("tags"))) else ""
         monthly_rank = _nan_to_none(novel.get("monthly_rank_latest"))
 
+        # 評価件数スコア計算
+        all_hyoka_cnt_val = _nan_to_none(novel.get("all_hyoka_cnt_latest"))
+        eval_score = calc_eval_score(all_hyoka_cnt_val)
+
+        # 過去最高ランク（スナップショットから）
+        best_rank_ever = calc_best_rank_ever(ncode, snapshots_df)
+
         # 未アニメ化作品のみ Pattern1 スコアを計算
         pattern1_scores: list[dict] = []
         if not is_anime and not narou_anime_df.empty:
@@ -282,6 +315,7 @@ def main() -> None:
                     novel_rank=monthly_rank,
                     novel_bm_view_score=bm_view_score,
                     novel_growth=view_growth_6mo,
+                    novel_eval_score=eval_score,
                     anime=anime_row,
                 )
                 pattern1_scores.append(score_dict)
@@ -302,10 +336,16 @@ def main() -> None:
             "anime_id": _nan_to_none(novel.get("anime_id")),
             "monthly_rank_latest": _nan_to_none(monthly_rank),
             "bookmark_count_latest": _nan_to_none(novel.get("bookmark_count_latest")),
+            "weekly_unique_latest": _nan_to_none(novel.get("weekly_unique_latest")),
+            "all_point_latest": _nan_to_none(novel.get("all_point_latest")),
+            "all_hyoka_cnt_latest": _nan_to_none(all_hyoka_cnt_val),
+            "episode_count_latest": _nan_to_none(novel.get("episode_count_latest")),
+            "best_rank_ever": best_rank_ever,
             "updated_at": str(novel.get("updated_at", "")),
             "cumulative_view_latest": cumulative_view_latest,
             "bm_view_ratio": bm_view_ratio,
             "view_growth_6mo": round(view_growth_6mo, 4),
+            "eval_score": round(eval_score, 4),
             "pattern1_best_score": pattern1_best_score,
             "pattern1_best_anime_id": pattern1_best_anime_id,
             "pattern1_scores": pattern1_scores,
@@ -369,6 +409,15 @@ def main() -> None:
         {
             "ncode": r["ncode"],
             "title": r["title"],
+            "is_anime": r["is_anime"],
+            "monthly_rank_latest": r["monthly_rank_latest"],
+            "best_rank_ever": r["best_rank_ever"],
+            "eval_score": r["eval_score"],
+            "genre_score": (r["pattern1_scores"][0].get("genre_score", 0) if r["pattern1_scores"] else 0),
+            "tag_score": (r["pattern1_scores"][0].get("tag_score", 0) if r["pattern1_scores"] else 0),
+            "rank_score": (r["pattern1_scores"][0].get("rank_score", 0) if r["pattern1_scores"] else 0),
+            "bm_view_score": (r["pattern1_scores"][0].get("bm_view_score", 0) if r["pattern1_scores"] else 0),
+            "growth_score": (r["pattern1_scores"][0].get("growth_score", 0) if r["pattern1_scores"] else 0),
             "pattern1_best_score": r["pattern1_best_score"],
             "pattern1_best_anime_id": r["pattern1_best_anime_id"],
         }

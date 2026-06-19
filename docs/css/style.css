@@ -119,6 +119,30 @@ main {
   white-space: nowrap;
 }
 
+.filter-check {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  color: #555;
+  cursor: pointer;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 0.5rem;
+}
+
+.page-info {
+  font-size: 0.875rem;
+  color: #555;
+  white-space: nowrap;
+}
+
 /* テーブル */
 .table-wrap {
   overflow-x: auto;

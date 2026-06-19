@@ -123,6 +123,10 @@ def main() -> None:
             "bookmark_count": detail.get("bookmarkcount", 0),
             "monthly_rank": row.get("monthly_rank_latest"),
             "weekly_rank": None,
+            "weekly_unique": detail.get("weekly_unique"),
+            "all_point": detail.get("all_point"),
+            "all_hyoka_cnt": detail.get("all_hyoka_cnt"),
+            "episode_count": detail.get("general_all_no"),
         })
 
     if new_rows:
