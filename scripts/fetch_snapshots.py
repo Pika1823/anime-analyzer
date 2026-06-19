@@ -105,9 +105,10 @@ def main() -> None:
         if detail is None:
             continue
 
-        cumulative_view = detail.get("allcount")
+        # out=json では累積View数が取得できないため global_point を代替指標として使用
+        cumulative_view = detail.get("global_point")
         if cumulative_view is None:
-            logger.warning("ncode=%s: allcount フィールドが存在しないためスキップ", ncode)
+            logger.warning("ncode=%s: global_point フィールドが存在しないためスキップ", ncode)
             continue
 
         daily_view = calc_daily_view(ncode, cumulative_view, snapshots, today)

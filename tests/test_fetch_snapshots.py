@@ -73,9 +73,9 @@ def test_calc_daily_view_clamps_negative_to_zero():
     assert result == 0
 
 
-def test_calc_daily_view_handles_missing_allcount():
-    """allcount が None の場合はスキップされることを確認する。"""
-    # fetch_novel_snapshot が allcount なしの dict を返す場合
+def test_calc_daily_view_handles_missing_global_point():
+    """global_point が None の場合はスキップされることを確認する。"""
+    # fetch_novel_snapshot が global_point なしの dict を返す場合
     # main() 側でスキップされる（calc_daily_view には到達しない）
     # このケースは main() のテストで確認するが、
     # calc_daily_view に None を渡しても壊れないことを確認する
@@ -90,7 +90,7 @@ def test_fetch_novel_snapshot_returns_dict_on_success():
     mock_response = MagicMock()
     mock_response.json.return_value = [
         {"allcount": 1},
-        {"ncode": "N001", "allcount": 5000, "bookmarkcount": 100},
+        {"ncode": "N001", "global_point": 5000, "bookmarkcount": 100},
     ]
     mock_response.raise_for_status = MagicMock()
 
@@ -98,7 +98,7 @@ def test_fetch_novel_snapshot_returns_dict_on_success():
         result = fetch_novel_snapshot("N001")
 
     assert result is not None
-    assert result["allcount"] == 5000
+    assert result["global_point"] == 5000
     assert result["bookmarkcount"] == 100
 
 
