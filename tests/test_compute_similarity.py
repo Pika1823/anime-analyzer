@@ -144,10 +144,10 @@ def _write_csv(path: Path, content: str) -> None:
 
 
 def test_main_generates_json_files(tmp_path, monkeypatch):
-    """DATA_DIR を tmp_path に差し替えて main() が 3 つの JSON を生成することを確認する。"""
+    """DOCS_DATA_DIR を tmp_path に差し替えて main() が 3 つの JSON を生成することを確認する。"""
     import compute_similarity
 
-    monkeypatch.setattr(compute_similarity, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(compute_similarity, "DOCS_DATA_DIR", tmp_path)
     monkeypatch.setattr(compute_similarity, "NOVELS_MERGED_JSON", tmp_path / "novels_merged.json")
     monkeypatch.setattr(compute_similarity, "TRENDS_MERGED_JSON", tmp_path / "trends_merged.json")
     monkeypatch.setattr(compute_similarity, "SIMILARITY_JSON", tmp_path / "similarity.json")
@@ -191,7 +191,7 @@ def test_main_handles_missing_snapshots(tmp_path, monkeypatch):
     """daily_snapshots.csv が存在しなくてもクラッシュしないことを確認する。"""
     import compute_similarity
 
-    monkeypatch.setattr(compute_similarity, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(compute_similarity, "DOCS_DATA_DIR", tmp_path)
     monkeypatch.setattr(compute_similarity, "NOVELS_MERGED_JSON", tmp_path / "novels_merged.json")
     monkeypatch.setattr(compute_similarity, "TRENDS_MERGED_JSON", tmp_path / "trends_merged.json")
     monkeypatch.setattr(compute_similarity, "SIMILARITY_JSON", tmp_path / "similarity.json")

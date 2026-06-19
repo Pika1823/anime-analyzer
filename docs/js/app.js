@@ -18,8 +18,8 @@ async function loadData() {
   showLoading();
   try {
     const [novelsRes, trendsRes] = await Promise.allSettled([
-      fetch('../data/novels_merged.json'),
-      fetch('../data/trends_merged.json'),
+      fetch('./data/novels_merged.json'),
+      fetch('./data/trends_merged.json'),
     ]);
 
     if (novelsRes.status === 'fulfilled' && novelsRes.value.ok) {

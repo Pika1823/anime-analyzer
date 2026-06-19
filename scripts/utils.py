@@ -11,6 +11,7 @@ import pandas as pd
 
 ROOT_DIR = Path(__file__).parent.parent
 DATA_DIR = ROOT_DIR / "data"
+DOCS_DATA_DIR = ROOT_DIR / "docs" / "data"
 
 NOVELS_CSV = DATA_DIR / "novels.csv"
 ANIME_WORKS_CSV = DATA_DIR / "anime_works.csv"

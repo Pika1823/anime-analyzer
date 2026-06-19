@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from utils import (
     ANIME_WORKS_CSV,
     DAILY_SNAPSHOTS_CSV,
-    DATA_DIR,
+    DOCS_DATA_DIR,
     NOVELS_CSV,
     TRENDS_CACHE_CSV,
     get_logger,
@@ -62,10 +62,10 @@ DEFAULT_WEIGHTS: dict[str, float] = {
     "growth": 0.10,
 }
 
-# 出力 JSON ファイルパス
-NOVELS_MERGED_JSON = DATA_DIR / "novels_merged.json"
-TRENDS_MERGED_JSON = DATA_DIR / "trends_merged.json"
-SIMILARITY_JSON = DATA_DIR / "similarity.json"
+# 出力 JSON ファイルパス（GitHub Pages から参照するため docs/data/ に出力）
+NOVELS_MERGED_JSON = DOCS_DATA_DIR / "novels_merged.json"
+TRENDS_MERGED_JSON = DOCS_DATA_DIR / "trends_merged.json"
+SIMILARITY_JSON = DOCS_DATA_DIR / "similarity.json"
 
 
 def get_genre_label(genre_code: str) -> str:
