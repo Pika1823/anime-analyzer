@@ -33,8 +33,12 @@ jobs:
         run: python scripts/fetch_trends.py
 
       - name: 類似度スコア計算・JSON 生成
-        run: python scripts/compute_similarity.py
-        continue-on-error: true
+        run: |
+          if [ -f scripts/compute_similarity.py ]; then
+            python scripts/compute_similarity.py
+          else
+            echo "compute_similarity.py は未実装のためスキップ（フェーズ2で実装予定）"
+          fi
 
       - name: 変更をコミット・プッシュ
         run: |
