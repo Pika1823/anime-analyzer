@@ -2,6 +2,7 @@
 なろうAPI から月刊ランキング TOP1000 を取得して novels.csv を upsert する。
 週次実行（月曜のみ）。
 """
+import time
 from datetime import date
 
 import pandas as pd
@@ -25,6 +26,9 @@ NAROU_PAGE_SIZE = 100
 NAROU_MAX_COUNT = 1000
 # なろうAPI リクエスト時の User-Agent（API 規約上の識別子として送信）
 NAROU_USER_AGENT = "anime-analyser/1.0"
+# 空レスポンス時のリトライ回数と待機秒数
+NAROU_RETRY_COUNT = 3
+NAROU_RETRY_WAIT_SEC = 10
 
 
 def fetch_monthly_top(limit: int = NAROU_MAX_COUNT) -> list[dict]:
@@ -47,22 +51,40 @@ def fetch_monthly_top(limit: int = NAROU_MAX_COUNT) -> list[dict]:
             "lim": fetch_count,
             "st": start,
         }
-        try:
-            resp = requests.get(
-                NAROU_API_URL,
-                params=params,
-                headers={"User-Agent": NAROU_USER_AGENT},
-                timeout=30,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            # jsonlite 形式: 先頭要素はメタ情報 {"allcount": N}
-            items = data[1:]
-        except requests.exceptions.RequestException as e:
-            logger.warning("なろうAPI リクエスト失敗（ページ %d）: %s", start, e)
-            break
-        except (ValueError, KeyError) as e:
-            logger.warning("なろうAPI レスポンス解析失敗（ページ %d）: %s", start, e)
+        items = None
+        for attempt in range(1, NAROU_RETRY_COUNT + 1):
+            try:
+                resp = requests.get(
+                    NAROU_API_URL,
+                    params=params,
+                    headers={"User-Agent": NAROU_USER_AGENT},
+                    timeout=30,
+                )
+                resp.raise_for_status()
+                if not resp.text.strip():
+                    # 空レスポンス: API が一時的に応答しない場合にリトライ
+                    logger.warning(
+                        "なろうAPI 空レスポンス（ページ %d, 試行 %d/%d）",
+                        start, attempt, NAROU_RETRY_COUNT,
+                    )
+                    if attempt < NAROU_RETRY_COUNT:
+                        time.sleep(NAROU_RETRY_WAIT_SEC)
+                    continue
+                data = resp.json()
+                # jsonlite 形式: 先頭要素はメタ情報 {"allcount": N}
+                items = data[1:]
+                break
+            except requests.exceptions.RequestException as e:
+                logger.warning("なろうAPI リクエスト失敗（ページ %d, 試行 %d/%d）: %s", start, attempt, NAROU_RETRY_COUNT, e)
+                if attempt < NAROU_RETRY_COUNT:
+                    time.sleep(NAROU_RETRY_WAIT_SEC)
+            except (ValueError, KeyError) as e:
+                logger.warning("なろうAPI レスポンス解析失敗（ページ %d）: %s", start, e)
+                items = None
+                break
+
+        if items is None:
+            # 全リトライ失敗
             break
         if not items:
             break
