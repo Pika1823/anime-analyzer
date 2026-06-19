@@ -100,18 +100,27 @@ def fetch_archive_html(timestamp: str) -> str | None:
 
 
 def parse_ranking_html(html: str, snapshot_date: str) -> list[dict]:
-    """なろうランキング HTML をパースしてランキングデータを抽出する。"""
+    """なろうランキング HTML をパースしてランキングデータを抽出する。
+
+    Wayback Machine はリンクを自プロキシ URL でラップするため、
+    ncode.syosetu.com/NCODE/ 形式と /novel/NCODE/ 形式の両方に対応する。
+    """
     soup = BeautifulSoup(html, "lxml")
     items = soup.select("div.rank_h") or soup.select("li.rank_h")
     hrefs: list[str] = []
     for item in items:
-        link = item.select_one("a[href*='/novel/']")
+        # Wayback Machine ではプロキシ URL に ncode.syosetu.com が含まれる
+        link = item.select_one("a[href*='ncode.syosetu.com']") or item.select_one("a[href*='/novel/']")
         if link:
             hrefs.append(link.get("href", ""))
 
     rows: list[dict] = []
     for rank, href in enumerate(hrefs, start=1):
-        match = re.search(r"/novel/([A-Za-z0-9]+)/", href)
+        # ncode.syosetu.com/NCODE/ 形式（Wayback Machine ラップ済み URL）
+        match = re.search(r"ncode\.syosetu\.com/([A-Za-z0-9]+)/", href)
+        # /novel/NCODE/ 形式（ローカルテスト等）
+        if not match:
+            match = re.search(r"/novel/([A-Za-z0-9]+)/", href)
         if not match:
             continue
         ncode = match.group(1).upper()

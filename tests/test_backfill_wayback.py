@@ -74,6 +74,24 @@ def test_parse_ranking_html_uppercases_ncode():
     assert rows[0]["ncode"] == "N1234AB"
 
 
+def test_parse_ranking_html_handles_wayback_machine_url():
+    """Wayback Machine のプロキシ URL（ncode.syosetu.com 形式）でも ncode を抽出できる。"""
+    html = """<html><body>
+    <div class="rank_h">
+      <a href="https://web.archive.org/web/20220711/https://ncode.syosetu.com/n4995hm/">タイトル1</a>
+    </div>
+    <div class="rank_h">
+      <a href="https://web.archive.org/web/20220711/https://ncode.syosetu.com/n0753hr/">タイトル2</a>
+    </div>
+    </body></html>"""
+    rows = parse_ranking_html(html, "2022-07-11")
+    assert len(rows) == 2
+    assert rows[0]["ncode"] == "N4995HM"
+    assert rows[1]["ncode"] == "N0753HR"
+    assert rows[0]["monthly_rank"] == 1
+    assert rows[1]["monthly_rank"] == 2
+
+
 # ---------------------------------------------------------------------------
 # list_archive_urls
 # ---------------------------------------------------------------------------
