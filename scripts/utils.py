@@ -1,4 +1,5 @@
 import logging
+import os
 import random
 import time
 from datetime import date
@@ -37,7 +38,11 @@ def rate_limit_sleep() -> None:
 
 
 def is_weekly_run_day(weekday: int = 0) -> bool:
-    """今日が指定曜日（デフォルト: 月曜=0）かどうかを返す。"""
+    """今日が指定曜日（デフォルト: 月曜=0）かどうかを返す。
+    環境変数 FORCE_RUN=true が設定されている場合は曜日にかかわらず True を返す。
+    """
+    if os.environ.get("FORCE_RUN", "").lower() == "true":
+        return True
     return date.today().weekday() == weekday
 
 

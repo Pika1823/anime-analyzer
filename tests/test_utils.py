@@ -24,6 +24,22 @@ def test_is_weekly_run_day_returns_false_on_wednesday():
         assert is_weekly_run_day() is False
 
 
+def test_is_weekly_run_day_force_run_env(monkeypatch):
+    """FORCE_RUN=true の場合、曜日にかかわらず True を返すことを確認する。"""
+    monkeypatch.setenv("FORCE_RUN", "true")
+    with patch("utils.date") as mock_date:
+        mock_date.today.return_value.weekday.return_value = 2  # 水曜
+        assert is_weekly_run_day() is True
+
+
+def test_is_weekly_run_day_force_run_false(monkeypatch):
+    """FORCE_RUN=false の場合、通常の曜日判定が行われることを確認する。"""
+    monkeypatch.setenv("FORCE_RUN", "false")
+    with patch("utils.date") as mock_date:
+        mock_date.today.return_value.weekday.return_value = 2  # 水曜
+        assert is_weekly_run_day() is False
+
+
 def test_is_weekly_run_day_custom_weekday():
     with patch("utils.date") as mock_date:
         mock_date.today.return_value.weekday.return_value = 3  # 木曜

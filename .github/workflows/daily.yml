@@ -3,7 +3,16 @@ name: Daily data update
 on:
   schedule:
     - cron: '0 20 * * *'  # 毎日 JST 05:00
-  workflow_dispatch:       # 手動実行も可能
+  workflow_dispatch:
+    inputs:
+      force_narou:
+        description: 'なろう小説マスター更新を強制実行（月曜以外でも実行）'
+        type: boolean
+        default: false
+      force_trends:
+        description: 'PyTrends キャッシュ更新を強制実行（月曜以外でも実行）'
+        type: boolean
+        default: false
 
 jobs:
   update:
@@ -25,12 +34,16 @@ jobs:
 
       - name: なろう小説マスター更新（週次）
         run: python scripts/fetch_narou.py
+        env:
+          FORCE_RUN: ${{ inputs.force_narou }}
 
       - name: 日次スナップショット追記
         run: python scripts/fetch_snapshots.py
 
       - name: PyTrends キャッシュ更新（週次）
         run: python scripts/fetch_trends.py
+        env:
+          FORCE_RUN: ${{ inputs.force_trends }}
 
       - name: 類似度スコア計算・JSON 生成
         run: |
