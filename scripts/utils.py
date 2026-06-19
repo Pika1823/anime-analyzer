@@ -1,9 +1,10 @@
+from __future__ import annotations
+
 import logging
 import random
 import time
 from datetime import date
 from pathlib import Path
-from typing import Optional
 
 import pandas as pd
 
@@ -42,7 +43,7 @@ def is_weekly_run_day(weekday: int = 0) -> bool:
     return date.today().weekday() == weekday
 
 
-def load_csv(path: Path, dtype: Optional[dict] = None) -> pd.DataFrame:
+def load_csv(path: Path, dtype: dict | None = None) -> pd.DataFrame:
     """CSV を読み込む。ファイルが存在しない場合は空の DataFrame を返す。"""
     if not path.exists():
         return pd.DataFrame()
