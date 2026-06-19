@@ -6,7 +6,7 @@ daily_snapshots.csv に過去のランキング順位データを補完する。
 import argparse
 import re
 import time
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 import pandas as pd
 import requests
@@ -16,7 +16,7 @@ from utils import DAILY_SNAPSHOTS_CSV, get_logger, load_csv, save_csv
 
 logger = get_logger(__name__)
 
-CDX_API_URL = "http://web.archive.org/cdx/search/cdx"
+CDX_API_URL = "https://web.archive.org/cdx/search/cdx"
 NAROU_RANKING_URL = "https://yomou.syosetu.com/rank/list/type/monthly_total/"
 # アーカイブ取得後のスリープ秒数（Wayback Machine のレート制限対策）
 WAYBACK_SLEEP_SEC = 3
@@ -53,18 +53,23 @@ def list_archive_urls(start: date, end: date) -> list[dict]:
         # 取得件数が limit 未満なら最終ページ
         if len(rows) < params["limit"]:
             break
-        # 次ページ: 最後のタイムスタンプから継続（簡易実装）
+        # 最終タイムスタンプの1秒後から次ページを取得（from は inclusive のため重複回避）
         last_ts = rows[-1][0]
-        params = dict(params)
-        params["from"] = last_ts
-        # 重複は既存のキーセットで排除される
+        try:
+            last_dt = datetime.strptime(last_ts, "%Y%m%d%H%M%S")
+            last_dt = last_dt + timedelta(seconds=1)
+            params = dict(params)
+            params["from"] = last_dt.strftime("%Y%m%d%H%M%S")
+        except ValueError:
+            logger.warning("タイムスタンプのパース失敗: %s、ページネーションを終了", last_ts)
+            break
     logger.info("アーカイブ一覧取得完了: %d 件", len(results))
     return results
 
 
 def fetch_archive_html(timestamp: str) -> str | None:
     """Wayback Machine からアーカイブ HTML を取得する。"""
-    url = f"http://web.archive.org/web/{timestamp}/{NAROU_RANKING_URL}"
+    url = f"https://web.archive.org/web/{timestamp}/{NAROU_RANKING_URL}"
     try:
         resp = requests.get(url, timeout=60)
         resp.raise_for_status()

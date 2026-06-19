@@ -136,3 +136,41 @@ def test_fetch_archive_html_returns_none_on_error():
         result = fetch_archive_html("20240101120000")
 
     assert result is None
+
+
+# ---------------------------------------------------------------------------
+# list_archive_urls — ページネーション
+# ---------------------------------------------------------------------------
+
+
+def test_list_archive_urls_combines_multiple_pages():
+    """複数ページのレスポンスを結合することを確認する（limit 件ちょうど返された場合に2回目のリクエストを送る）。"""
+    from datetime import date
+
+    # ページ1: 500件ちょうど（ヘッダー + 500行）→ 次ページへ
+    # 2020-01-01 から1日ずつ増やして有効なタイムスタンプを生成する
+    from datetime import date as _date, timedelta as _td
+    base = _date(2020, 1, 1)
+    page1 = MagicMock()
+    page1.raise_for_status = MagicMock()
+    page1.json.return_value = (
+        [["timestamp", "original"]]
+        + [[(base + _td(days=i)).strftime("%Y%m%d") + "120000", "https://yomou.syosetu.com/"] for i in range(500)]
+    )
+    # ページ2: 1件（limit 未満）→ 終了
+    page2 = MagicMock()
+    page2.raise_for_status = MagicMock()
+    page2.json.return_value = [
+        ["timestamp", "original"],
+        ["20241231120000", "https://yomou.syosetu.com/"],
+    ]
+
+    mock_get = MagicMock(side_effect=[page1, page2])
+
+    with patch("backfill_wayback.requests.get", mock_get):
+        result = list_archive_urls(date(2024, 1, 1), date(2024, 12, 31))
+
+    # 2回リクエストが送られること
+    assert mock_get.call_count == 2
+    # 合計 501 件（500 + 1）
+    assert len(result) == 501
