@@ -181,6 +181,26 @@ def test_upsert_novels_keeps_existing_row_not_in_new():
     assert set(result["ncode"]) == {"N001", "N003"}
 
 
+def test_upsert_novels_handles_dtype_mismatch_anime_id():
+    """CSV 読み込み時に anime_id が float64 になった場合でも update() が成功することを確認する。
+
+    pandas は空文字 → NaN → float64 として読むため、
+    既存 anime_id が float64、新規が object になる型不一致が発生しやすい。
+    """
+    import numpy as np
+    existing = pd.DataFrame(
+        [{"ncode": "N001", "title": "A", "anime_id": np.nan, "updated_at": "2026-01-01"}]
+    )
+    # anime_id 列が float64 になるよう明示的にキャスト（CSV 読み込みを再現）
+    existing["anime_id"] = existing["anime_id"].astype("float64")
+    new_df = pd.DataFrame(
+        [{"ncode": "N001", "title": "A更新", "anime_id": "", "updated_at": "2026-06-01"}]
+    )
+    result = upsert_novels(existing, new_df)
+    assert len(result) == 1
+    assert result.iloc[0]["title"] == "A更新"
+
+
 # ---------------------------------------------------------------------------
 # fetch_monthly_top（requests.get をモック）
 # ---------------------------------------------------------------------------

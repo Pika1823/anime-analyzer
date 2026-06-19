@@ -147,12 +147,12 @@ def upsert_novels(existing: pd.DataFrame, new_df: pd.DataFrame) -> pd.DataFrame:
     existing_indexed = existing.set_index("ncode")
     new_indexed = new_df.set_index("ncode")
 
-    # 既存列の dtype に合わせて new_indexed をキャスト（型不一致による update() エラーを防ぐ）
+    # 型不一致の列（例: CSV 読み込み時に空文字 → float64 になった anime_id 等）は
+    # 両方 object にキャストして update() の TypeError を防ぐ
     for col in existing_indexed.columns.intersection(new_indexed.columns):
-        try:
-            new_indexed[col] = new_indexed[col].astype(existing_indexed[col].dtype)
-        except (ValueError, TypeError):
-            pass
+        if existing_indexed[col].dtype != new_indexed[col].dtype:
+            existing_indexed[col] = existing_indexed[col].astype(object)
+            new_indexed[col] = new_indexed[col].astype(object)
 
     # 既存行を新規データで上書き
     existing_indexed.update(new_indexed)
