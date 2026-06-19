@@ -236,3 +236,34 @@ def test_fetch_monthly_top_paginates_correctly():
 
     assert len(result) == 5
     assert mock_get.call_count == 2
+
+
+# ---------------------------------------------------------------------------
+# main（monkeypatch による統合テスト）
+# ---------------------------------------------------------------------------
+
+def test_main_reapplies_is_anime_after_upsert(tmp_path, monkeypatch):
+    """upsert 後に is_anime フラグが anime_ncodes で再付与されることを確認する。"""
+    import fetch_narou
+    # novels.csv: N001 が is_anime=True の既存データ（is_anime を明示的に bool 型で定義）
+    existing_df = pd.DataFrame([{
+        "ncode": "N001", "title": "旧", "author": "著者", "genre": "2",
+        "tags": "", "is_anime": True, "anime_id": "anime_001",
+        "monthly_rank_latest": 1, "bookmark_count_latest": 0, "updated_at": "2026-01-01"
+    }])
+    existing_df["is_anime"] = existing_df["is_anime"].astype(bool)
+    # anime_works.csv: N001 は未登録（anime_ncodes に含まれない）
+    anime_works_df = pd.DataFrame(columns=["ncode", "anime_id"])
+    # 新規 API レスポンス: N001 が返ってくるが is_anime は False になるはず
+    raw_data = [{"allcount": 1}, {"ncode": "N001", "title": "新", "writer": "著者",
+                 "genre": 2, "keyword": "", "bookmarkcount": 100, "allcount": 5000}]
+    monkeypatch.setattr(fetch_narou, "load_csv", lambda path, dtype=None: (
+        existing_df if "novels" in str(path) else anime_works_df
+    ))
+    saved = {}
+    monkeypatch.setattr(fetch_narou, "save_csv", lambda df, path: saved.update({"df": df}))
+    monkeypatch.setattr(fetch_narou, "is_weekly_run_day", lambda: True)
+    monkeypatch.setattr(fetch_narou, "fetch_monthly_top", lambda: raw_data[1:])
+    fetch_narou.main()
+    # anime_ncodes に N001 が含まれないので is_anime = False になること
+    assert saved["df"].iloc[0]["is_anime"] is False or saved["df"].iloc[0]["is_anime"] == False  # noqa: E712

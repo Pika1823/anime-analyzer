@@ -45,8 +45,12 @@ def fetch_monthly_top(limit: int = NAROU_MAX_COUNT) -> list[dict]:
             "lim": fetch_count,
             "st": start,
         }
-        resp = requests.get(NAROU_API_URL, params=params, timeout=30)
-        resp.raise_for_status()
+        try:
+            resp = requests.get(NAROU_API_URL, params=params, timeout=30)
+            resp.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            logger.error("なろう API リクエスト失敗 (st=%d): %s", start, e)
+            raise
         data = resp.json()
 
         # jsonlite 形式: 先頭要素はメタ情報 {"allcount": N}
@@ -112,6 +116,13 @@ def upsert_novels(existing: pd.DataFrame, new_df: pd.DataFrame) -> pd.DataFrame:
     existing_indexed = existing.set_index("ncode")
     new_indexed = new_df.set_index("ncode")
 
+    # 既存列の dtype に合わせて new_indexed をキャスト（型不一致による update() エラーを防ぐ）
+    for col in existing_indexed.columns.intersection(new_indexed.columns):
+        try:
+            new_indexed[col] = new_indexed[col].astype(existing_indexed[col].dtype)
+        except (ValueError, TypeError):
+            pass
+
     # 既存行を新規データで上書き
     existing_indexed.update(new_indexed)
 
@@ -142,7 +153,9 @@ def main() -> None:
 
     new_df = build_novels_df(raw, anime_ncodes)
     existing = load_csv(NOVELS_CSV, dtype={"ncode": str})
-    merged = upsert_novels(existing, new_df)
+    merged = upsert_novels(existing, new_df).copy()
+    # upsert 後に is_anime を anime_ncodes で再付与（update() による劣化を防ぐ）
+    merged["is_anime"] = merged["ncode"].isin(anime_ncodes).astype(bool)
     save_csv(merged, NOVELS_CSV)
     logger.info("novels.csv 更新完了: %d 件", len(merged))
 
