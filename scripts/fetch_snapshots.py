@@ -22,7 +22,7 @@ logger = get_logger(__name__)
 def fetch_novel_snapshot(ncode: str) -> dict | None:
     """なろう API で特定作品のスナップショットを取得する。"""
     params = {
-        "out": "jsonlite",
+        "out": "json",
         "ncode": ncode,
         "lim": 1,
     }

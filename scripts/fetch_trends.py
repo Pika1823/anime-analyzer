@@ -99,7 +99,8 @@ def main() -> None:
         logger.info("今日は週次実行日（月曜）ではないためスキップ")
         return
 
-    pytrends = TrendReq(hl="ja-JP", tz=540)
+    # proxies={} を明示してシステムプロキシをバイパスする（ローカルプロキシが Google をブロックする環境対策）
+    pytrends = TrendReq(hl="ja-JP", tz=540, requests_args={"proxies": {}})
     cache = load_csv(TRENDS_CACHE_CSV, dtype={"id": str})
 
     # 既存キーを (week_start, id, keyword_used) のセットとして保持し重複スキップに使用

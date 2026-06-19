@@ -46,7 +46,7 @@ def fetch_monthly_top(limit: int = NAROU_MAX_COUNT) -> list[dict]:
     while len(novels) < limit:
         fetch_count = min(NAROU_PAGE_SIZE, limit - len(novels))
         params = {
-            "out": "jsonlite",
+            "out": "json",
             "order": "monthlypoint",
             "lim": fetch_count,
             "st": start,
