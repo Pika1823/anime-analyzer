@@ -2,6 +2,8 @@
 novels.csv の全 ncode を対象に日次スナップショットを取得して daily_snapshots.csv に追記する。
 毎日実行。
 """
+from __future__ import annotations
+
 from datetime import date, timedelta
 
 import pandas as pd

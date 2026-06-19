@@ -3,6 +3,7 @@
 """
 アニメ化済み作品との類似度スコアを計算し、JSON ファイルを出力するスクリプト。
 """
+from __future__ import annotations
 
 import json
 import math
