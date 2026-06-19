@@ -1,0 +1,40 @@
+name: Daily data update
+
+on:
+  schedule:
+    - cron: '0 20 * * *'  # 毎日 JST 05:00
+  workflow_dispatch:       # 手動実行も可能
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 依存ライブラリのインストール
+        run: pip install -r scripts/requirements.txt
+
+      - name: なろう小説マスター更新（週次）
+        run: python scripts/fetch_narou.py
+
+      - name: 日次スナップショット追記
+        run: python scripts/fetch_snapshots.py
+
+      - name: PyTrends キャッシュ更新（週次）
+        run: python scripts/fetch_trends.py
+
+      - name: 類似度スコア計算・JSON 生成
+        run: python scripts/compute_similarity.py
+
+      - name: 変更をコミット・プッシュ
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/ docs/
+          git diff --staged --quiet || git commit -m "chore: daily data update $(date '+%Y-%m-%d')"
+          git push
