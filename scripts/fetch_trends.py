@@ -65,6 +65,7 @@ def build_trend_rows(
     keyword: str,
     scores: dict[str, int],
     success: bool,
+    week_start: str,
 ) -> list[dict]:
     """
     trends_cache.csv 用の行リストを生成する。
@@ -73,7 +74,7 @@ def build_trend_rows(
     """
     if not success:
         return [{
-            "week_start": get_week_start(date.today()),
+            "week_start": week_start,
             "id": id_,
             "id_type": id_type,
             "keyword_used": keyword,
@@ -121,7 +122,7 @@ def main() -> None:
             logger.debug("スキップ（既存）: ncode=%s keyword=%s", ncode, keyword)
             continue
         scores, success = fetch_trend_score(pytrends, keyword)
-        new_rows.extend(build_trend_rows(ncode, "novel", keyword, scores, success))
+        new_rows.extend(build_trend_rows(ncode, "novel", keyword, scores, success, week_start=week_start))
         rate_limit_sleep()
 
     # anime_works: title_short と title_full の2キーワードを順番に取得
@@ -137,7 +138,7 @@ def main() -> None:
                 continue
             scores, success = fetch_trend_score(pytrends, keyword)
             new_rows.extend(
-                build_trend_rows(anime_id, "anime", keyword, scores, success)
+                build_trend_rows(anime_id, "anime", keyword, scores, success, week_start=week_start)
             )
             rate_limit_sleep()
 
