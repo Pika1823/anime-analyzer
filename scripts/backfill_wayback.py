@@ -10,14 +10,9 @@ from datetime import date, timedelta
 
 import pandas as pd
 import requests
+from bs4 import BeautifulSoup
 
 from utils import DAILY_SNAPSHOTS_CSV, get_logger, load_csv, save_csv
-
-try:
-    from bs4 import BeautifulSoup as _BS4
-    _HAS_BS4 = True
-except ImportError:  # noqa: BLE001
-    _HAS_BS4 = False
 
 logger = get_logger(__name__)
 
@@ -29,6 +24,7 @@ WAYBACK_SLEEP_SEC = 3
 
 def list_archive_urls(start: date, end: date) -> list[dict]:
     """Wayback Machine CDX API でアーカイブ URL 一覧を取得する。"""
+    results: list[dict] = []
     params = {
         "url": NAROU_RANKING_URL,
         "output": "json",
@@ -38,14 +34,32 @@ def list_archive_urls(start: date, end: date) -> list[dict]:
         "collapse": "timestamp:8",  # 1日1件に絞る
         "limit": 500,
     }
-    resp = requests.get(CDX_API_URL, params=params, timeout=60)
-    resp.raise_for_status()
-    data = resp.json()
-    if len(data) <= 1:
-        # ヘッダー行のみ（該当なし）
-        return []
-    # 先頭行はヘッダー ["timestamp", "original"]
-    return [{"timestamp": row[0], "original": row[1]} for row in data[1:]]
+    while True:
+        resp = requests.get(CDX_API_URL, params=params, timeout=60)
+        resp.raise_for_status()
+        data = resp.json()
+        if not isinstance(data, list) or len(data) <= 1:
+            break
+        # 先頭行はヘッダー ["timestamp", "original"]（または resumeKey 行）
+        rows = data[1:]
+        if not rows:
+            break
+        # 通常のデータ行を追加
+        results.extend(
+            {"timestamp": row[0], "original": row[1]}
+            for row in rows
+            if len(row) >= 2
+        )
+        # 取得件数が limit 未満なら最終ページ
+        if len(rows) < params["limit"]:
+            break
+        # 次ページ: 最後のタイムスタンプから継続（簡易実装）
+        last_ts = rows[-1][0]
+        params = dict(params)
+        params["from"] = last_ts
+        # 重複は既存のキーセットで排除される
+    logger.info("アーカイブ一覧取得完了: %d 件", len(results))
+    return results
 
 
 def fetch_archive_html(timestamp: str) -> str | None:
@@ -60,41 +74,15 @@ def fetch_archive_html(timestamp: str) -> str | None:
         return None
 
 
-def _extract_ncode_hrefs_bs4(html: str) -> list[str]:
-    """BeautifulSoup を使って rank_h 要素内の /novel/NCODE/ href を抽出する。"""
-    soup = _BS4(html, "lxml")
-    hrefs: list[str] = []
+def parse_ranking_html(html: str, snapshot_date: str) -> list[dict]:
+    """なろうランキング HTML をパースしてランキングデータを抽出する。"""
+    soup = BeautifulSoup(html, "lxml")
     items = soup.select("div.rank_h") or soup.select("li.rank_h")
+    hrefs: list[str] = []
     for item in items:
         link = item.select_one("a[href*='/novel/']")
         if link:
             hrefs.append(link.get("href", ""))
-    return hrefs
-
-
-def _extract_ncode_hrefs_regex(html: str) -> list[str]:
-    """bs4 が使えない場合の正規表現フォールバック実装。"""
-    # rank_h ブロック内の /novel/NCODE/ パターンを抽出する
-    # 例: <div class="rank_h"><a href="/novel/N1234AB/">...
-    block_pattern = re.compile(
-        r'class=["\']rank_h["\'][^>]*>.*?</(?:div|li)>', re.DOTALL
-    )
-    href_pattern = re.compile(r'href=["\'](/novel/[A-Za-z0-9]+/)["\']')
-    hrefs: list[str] = []
-    for block in block_pattern.finditer(html):
-        m = href_pattern.search(block.group())
-        if m:
-            hrefs.append(m.group(1))
-    return hrefs
-
-
-def parse_ranking_html(html: str, snapshot_date: str) -> list[dict]:
-    """なろうランキング HTML をパースしてランキングデータを抽出する。"""
-    if _HAS_BS4:
-        hrefs = _extract_ncode_hrefs_bs4(html)
-    else:
-        # bs4 未インストール環境（テスト環境等）では正規表現で代替
-        hrefs = _extract_ncode_hrefs_regex(html)
 
     rows: list[dict] = []
     for rank, href in enumerate(hrefs, start=1):

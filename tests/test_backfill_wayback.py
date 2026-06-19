@@ -72,3 +72,67 @@ def test_parse_ranking_html_uppercases_ncode():
     html = '<html><body><div class="rank_h"><a href="/novel/n1234ab/">タイトル</a></div></body></html>'
     rows = parse_ranking_html(html, "2024-01-15")
     assert rows[0]["ncode"] == "N1234AB"
+
+
+# ---------------------------------------------------------------------------
+# list_archive_urls
+# ---------------------------------------------------------------------------
+
+
+def test_list_archive_urls_returns_parsed_entries():
+    """CDX API のレスポンスを正しくパースすることを確認する。"""
+    mock_response = MagicMock()
+    mock_response.json.return_value = [
+        ["timestamp", "original"],
+        ["20240101120000", "https://yomou.syosetu.com/..."],
+        ["20240201120000", "https://yomou.syosetu.com/..."],
+    ]
+    mock_response.raise_for_status = MagicMock()
+
+    with patch("backfill_wayback.requests.get", return_value=mock_response):
+        from datetime import date
+        result = list_archive_urls(date(2024, 1, 1), date(2024, 3, 1))
+
+    assert len(result) == 2
+    assert result[0]["timestamp"] == "20240101120000"
+    assert result[1]["timestamp"] == "20240201120000"
+
+
+def test_list_archive_urls_returns_empty_on_empty_response():
+    """CDX API が空リストを返した場合に空リストが返ることを確認する。"""
+    mock_response = MagicMock()
+    mock_response.json.return_value = []
+    mock_response.raise_for_status = MagicMock()
+
+    with patch("backfill_wayback.requests.get", return_value=mock_response):
+        from datetime import date
+        result = list_archive_urls(date(2024, 1, 1), date(2024, 3, 1))
+
+    assert result == []
+
+
+# ---------------------------------------------------------------------------
+# fetch_archive_html
+# ---------------------------------------------------------------------------
+
+
+def test_fetch_archive_html_returns_html_on_success():
+    """アーカイブ HTML の取得が成功した場合に文字列が返ることを確認する。"""
+    mock_response = MagicMock()
+    mock_response.text = "<html><body>テスト</body></html>"
+    mock_response.raise_for_status = MagicMock()
+
+    with patch("backfill_wayback.requests.get", return_value=mock_response):
+        result = fetch_archive_html("20240101120000")
+
+    assert result == "<html><body>テスト</body></html>"
+
+
+def test_fetch_archive_html_returns_none_on_error():
+    """HTTP エラー時に None が返ることを確認する。"""
+    import requests as req
+
+    with patch("backfill_wayback.requests.get", side_effect=req.exceptions.RequestException("接続失敗")):
+        result = fetch_archive_html("20240101120000")
+
+    assert result is None
