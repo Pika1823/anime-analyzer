@@ -299,17 +299,31 @@ def main() -> None:
         novel_tags = str(novel.get("tags", "")) if not (isinstance(novel.get("tags"), float) and math.isnan(novel.get("tags"))) else ""
         monthly_rank = _nan_to_none(novel.get("monthly_rank_latest"))
 
-        # 評価件数スコア計算
-        all_hyoka_cnt_val = _nan_to_none(novel.get("all_hyoka_cnt_latest"))
+        # 評価件数スコア計算（スナップショット優先、なければ novels.csv）
+        all_hyoka_cnt_from_snap = None
+        if latest_snap and "all_hyoka_cnt" in latest_snap:
+            ahc = latest_snap.get("all_hyoka_cnt")
+            if ahc is not None and not (isinstance(ahc, float) and math.isnan(ahc)):
+                try:
+                    all_hyoka_cnt_from_snap = int(float(ahc))
+                except (ValueError, TypeError):
+                    pass
+        all_hyoka_cnt_val = all_hyoka_cnt_from_snap if all_hyoka_cnt_from_snap is not None else _nan_to_none(novel.get("all_hyoka_cnt_latest"))
         eval_score = calc_eval_score(all_hyoka_cnt_val)
 
         # 過去最高ランク（スナップショットから）
         best_rank_ever = calc_best_rank_ever(ncode, snapshots_df)
 
-        # 未アニメ化作品のみ Pattern1 スコアを計算
+        # Pattern1 スコアを計算（アニメ作品の場合は自身の anime_id を除外して比較）
         pattern1_scores: list[dict] = []
-        if not is_anime and not narou_anime_df.empty:
-            for _, anime_row in narou_anime_df.iterrows():
+        if not narou_anime_df.empty:
+            own_anime_id = str(novel.get("anime_id", "")) if is_anime else ""
+            candidates = (
+                narou_anime_df[narou_anime_df["anime_id"] != own_anime_id]
+                if is_anime and own_anime_id
+                else narou_anime_df
+            )
+            for _, anime_row in candidates.iterrows():
                 score_dict = calc_pattern1_score(
                     novel_genre_label=genre_label,
                     novel_tags=novel_tags,
@@ -405,7 +419,7 @@ def main() -> None:
     )
     logger.info(f"trends_merged.json を出力しました: {TRENDS_MERGED_JSON}")
 
-    # similarity.json 出力（未アニメ化のみ、スコア降順）
+    # similarity.json 出力（未アニメ化 + アニメ化済み全作品、スコア降順）
     unadapted_with_score = [
         {
             "ncode": r["ncode"],
@@ -414,6 +428,7 @@ def main() -> None:
             "monthly_rank_latest": r["monthly_rank_latest"],
             "best_rank_ever": r["best_rank_ever"],
             "eval_score": r["eval_score"],
+            "all_hyoka_cnt_latest": r["all_hyoka_cnt_latest"],
             "genre_score": (r["pattern1_scores"][0].get("genre_score", 0) if r["pattern1_scores"] else 0),
             "tag_score": (r["pattern1_scores"][0].get("tag_score", 0) if r["pattern1_scores"] else 0),
             "rank_score": (r["pattern1_scores"][0].get("rank_score", 0) if r["pattern1_scores"] else 0),
@@ -421,9 +436,10 @@ def main() -> None:
             "growth_score": (r["pattern1_scores"][0].get("growth_score", 0) if r["pattern1_scores"] else 0),
             "pattern1_best_score": r["pattern1_best_score"],
             "pattern1_best_anime_id": r["pattern1_best_anime_id"],
+            "pattern1_scores": r["pattern1_scores"],
         }
         for r in novel_records
-        if not r["is_anime"] and r["pattern1_best_score"] is not None
+        if r["pattern1_best_score"] is not None
     ]
     unadapted_with_score.sort(key=lambda x: x["pattern1_best_score"] or 0, reverse=True)
 
@@ -447,10 +463,12 @@ def main() -> None:
             bm_val = _nan_to_none(row.get("bookmark_count"))
             if not ncode_val or not date_val:
                 continue
+            hyoka_val = _nan_to_none(row.get("all_hyoka_cnt"))
             snapshots_by_ncode.setdefault(ncode_val, []).append({
                 "date": date_val,
                 "monthly_rank": int(rank_val) if rank_val is not None else None,
                 "bookmark_count": int(bm_val) if bm_val is not None else None,
+                "all_hyoka_cnt": int(float(hyoka_val)) if hyoka_val is not None else None,
             })
 
     snapshots_merged = {

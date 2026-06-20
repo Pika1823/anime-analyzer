@@ -14,6 +14,7 @@ const PAGE_SIZE = 100;
 // Chart.js インスタンス（再描画時に破棄する）
 let comparisonChart = null;
 let rankingTrendChart = null;
+let evalTrendChart = null;
 let trendsChart = null;
 
 const DEFAULT_WEIGHTS = { genre: 25, tag: 20, rank: 20, bmView: 15, growth: 10, eval: 10 };
@@ -159,9 +160,10 @@ function renderRanking(weights) {
     .map((n, i) => {
       const scorePct = Math.round(n._score * 100);
       const barWidth = Math.max(2, scorePct);
+      const animeBadge = n.is_anime ? ' <span class="anime-badge">アニメ化済み</span>' : '';
       return `<tr data-ncode="${n.ncode}" data-anime-id="${n._animeId || ''}">
         <td>${pageOffset + i + 1}</td>
-        <td>${escHtml(n.title)}</td>
+        <td>${escHtml(n.title)}${animeBadge}</td>
         <td>${escHtml(n.genre_label || '—')}</td>
         <td>${n.monthly_rank_latest != null ? n.monthly_rank_latest : '—'}</td>
         <td>
@@ -227,22 +229,37 @@ function renderComparison(ncode) {
   const bestEntry = novel.pattern1_scores?.find((e) => e.anime_id === animeId) || null;
 
   const rankHistory = snapshotsData?.snapshots?.[ncode] || [];
+  const evalHistory = rankHistory.filter((d) => d.all_hyoka_cnt != null && d.all_hyoka_cnt > 0);
+
+  const animeBadge = novel.is_anime ? ' <span class="anime-badge">アニメ化済み</span>' : '';
+  const narouUrl = `https://ncode.syosetu.com/${ncode.toLowerCase()}/`;
 
   container.innerHTML = `
+    <div class="back-bar">
+      <button class="btn btn-secondary btn-back" id="btn-back-ranking">← ランキングに戻る</button>
+    </div>
     <div class="card">
-      <h3>${escHtml(novel.title)}</h3>
+      <h3>
+        <a class="novel-link" href="${narouUrl}" target="_blank" rel="noopener">${escHtml(novel.title)}</a>${animeBadge}
+      </h3>
       <div class="meta-row">
         <span><strong>著者:</strong> ${escHtml(novel.author || '—')}</span>
         <span><strong>ジャンル:</strong> ${escHtml(novel.genre_label || '—')}</span>
         <span><strong>月刊順位:</strong> ${novel.monthly_rank_latest ?? '—'}</span>
         <span><strong>歴代最高順位:</strong> ${novel.best_rank_ever ?? '—'}</span>
+        <span><strong>評価件数:</strong> ${novel.all_hyoka_cnt_latest != null ? novel.all_hyoka_cnt_latest.toLocaleString() + ' 件' : '—'}</span>
         <span><strong>スコア:</strong> ${score.toFixed(3)}</span>
         <span><strong>最類似アニメ:</strong> ${escHtml(animeTitle || '—')}</span>
+        <span><strong>Nコード:</strong> <a class="novel-link" href="${narouUrl}" target="_blank" rel="noopener">${ncode}</a></span>
       </div>
     </div>
     ${rankHistory.length >= 2
       ? `<div class="card"><h4 class="chart-title">月刊ランキング推移</h4><div class="chart-container"><canvas id="ranking-trend-chart"></canvas></div></div>`
       : `<div class="card"><p style="color:#888;font-size:0.875rem;">ランキング推移データ蓄積中です（現在 ${rankHistory.length} 件）。毎日追記されます。</p></div>`
+    }
+    ${evalHistory.length >= 2
+      ? `<div class="card"><h4 class="chart-title">累計評価件数の推移</h4><div class="chart-container"><canvas id="eval-trend-chart"></canvas></div></div>`
+      : ''
     }
     ${bestEntry ? `<div class="card"><h4 class="chart-title">スコア内訳（vs ${escHtml(animeTitle || '')}）</h4><div class="chart-container"><canvas id="score-breakdown-chart"></canvas></div></div>` : ''}
   `;
@@ -250,9 +267,16 @@ function renderComparison(ncode) {
   if (rankHistory.length >= 2) {
     renderRankingTrend(rankHistory, novel.title);
   }
+  if (evalHistory.length >= 2) {
+    renderEvalTrend(evalHistory, novel.title);
+  }
   if (bestEntry) {
     renderScoreBreakdown(bestEntry, animeTitle);
   }
+
+  document.getElementById('btn-back-ranking')?.addEventListener('click', () => {
+    switchTab('ranking');
+  });
 }
 
 function renderRankingTrend(history, novelTitle) {
@@ -304,6 +328,60 @@ function renderRankingTrend(history, novelTitle) {
         tooltip: {
           callbacks: {
             label: (c) => ` ${c.parsed.y != null ? c.parsed.y + '位' : 'データなし'}`,
+          },
+        },
+      },
+    },
+  });
+}
+
+function renderEvalTrend(history, novelTitle) {
+  const ctx = document.getElementById('eval-trend-chart');
+  if (!ctx) return;
+
+  if (evalTrendChart) {
+    evalTrendChart.destroy();
+    evalTrendChart = null;
+  }
+
+  const sorted = [...history].sort((a, b) => a.date.localeCompare(b.date));
+  const labels = sorted.map((d) => d.date);
+  const counts = sorted.map((d) => d.all_hyoka_cnt);
+
+  evalTrendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: `累計評価件数: ${novelTitle}`,
+          data: counts,
+          borderColor: '#f5a623',
+          backgroundColor: 'rgba(245,166,35,0.08)',
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          spanGaps: false,
+          tension: 0.2,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          title: { display: true, text: '累計評価件数（件）' },
+          min: 0,
+        },
+        x: {
+          ticks: { maxTicksLimit: 12, maxRotation: 45 },
+        },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (c) => ` ${c.parsed.y != null ? c.parsed.y.toLocaleString() + ' 件' : 'データなし'}`,
           },
         },
       },
