@@ -39,50 +39,25 @@
         </p>
         <div class="score-explain">
           <div class="score-explain-title">スコアの計算方法 <span class="score-range">（0.00 〜 1.00、1.00 が最も似ている）</span></div>
-          <div class="score-factors">
-            <div class="factor-row">
-              <span class="factor-label">ジャンル一致</span>
-              <div class="factor-bar-bg"><div class="factor-bar" style="width:50%"></div></div>
-              <span class="factor-weight">25%</span>
-              <span class="factor-desc">ファンタジー・恋愛など大分類が同じか</span>
-            </div>
-            <div class="factor-row">
-              <span class="factor-label">タグ類似度</span>
-              <div class="factor-bar-bg"><div class="factor-bar" style="width:40%"></div></div>
-              <span class="factor-weight">20%</span>
-              <span class="factor-desc">「転生」「異世界」など共通キーワードの割合</span>
-            </div>
-            <div class="factor-row">
-              <span class="factor-label">ランク帯</span>
-              <div class="factor-bar-bg"><div class="factor-bar" style="width:40%"></div></div>
-              <span class="factor-weight">20%</span>
-              <span class="factor-desc">月刊1〜100位=高、101〜300=中、301〜=低</span>
-            </div>
-            <div class="factor-row">
-              <span class="factor-label">BM/View比率</span>
-              <div class="factor-bar-bg"><div class="factor-bar" style="width:30%"></div></div>
-              <span class="factor-weight">15%</span>
-              <span class="factor-desc">ブックマーク数 ÷ 総閲覧数（コア読者の定着度）</span>
-            </div>
-            <div class="factor-row">
-              <span class="factor-label">View成長率</span>
-              <div class="factor-bar-bg"><div class="factor-bar" style="width:20%"></div></div>
-              <span class="factor-weight">10%</span>
-              <span class="factor-desc">直近6ヶ月の閲覧数の伸び（データ蓄積後に有効）</span>
-            </div>
-            <div class="factor-row">
-              <span class="factor-label">評価件数</span>
-              <div class="factor-bar-bg"><div class="factor-bar" style="width:20%"></div></div>
-              <span class="factor-weight">10%</span>
-              <span class="factor-desc">累計評価件数（1000件で満点 — いいね数の代替）</span>
-            </div>
-          </div>
+          <div class="score-factors" id="score-factors"></div>
           <p class="info-note">⚙ 設定タブで各項目の重みを自由に変更できます</p>
         </div>
       </div>
     </div>
 
     <div class="filter-bar">
+      <label>
+        並び替え:
+        <select id="sort-by">
+          <option value="score">アニメ類似度</option>
+          <option value="all_hyoka_cnt_latest">評価件数</option>
+          <option value="all_point_latest">評価ポイント</option>
+          <option value="cumulative_view_latest">総合評価（代替）</option>
+          <option value="impression_cnt_latest">感想件数</option>
+          <option value="monthly_rank_latest">月刊順位</option>
+          <option value="best_rank_ever">歴代最高順位</option>
+        </select>
+      </label>
       <label>
         ジャンル:
         <select id="filter-genre">

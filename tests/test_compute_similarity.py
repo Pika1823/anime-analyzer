@@ -85,14 +85,14 @@ def test_calc_eval_score_zero():
 
 
 def test_calc_eval_score_half():
-    """評価件数 500 は 0.5 を返す。"""
-    assert calc_eval_score(500) == 0.5
+    """評価件数 15000 は 0.5 を返す（30000件で満点）。"""
+    assert calc_eval_score(15000) == 0.5
 
 
 def test_calc_eval_score_max():
-    """評価件数 1000 以上は 1.0 を返す。"""
-    assert calc_eval_score(1000) == 1.0
-    assert calc_eval_score(2000) == 1.0
+    """評価件数 30000 以上は 1.0 を返す。"""
+    assert calc_eval_score(30000) == 1.0
+    assert calc_eval_score(50000) == 1.0
 
 
 def test_calc_eval_score_none():

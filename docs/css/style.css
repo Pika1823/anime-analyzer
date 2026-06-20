@@ -554,6 +554,19 @@ tbody td {
   white-space: nowrap;
 }
 
+/* あらすじ表示 */
+.novel-story {
+  font-size: 0.875rem;
+  color: #444;
+  line-height: 1.75;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #eee;
+  max-height: 10em;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
 /* レスポンシブ調整 */
 @media (max-width: 600px) {
   header {

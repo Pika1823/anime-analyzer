@@ -109,11 +109,13 @@ def calc_bm_view_score(bookmark: int | float, cumulative_view: int | float | Non
     return min(1.0, ratio / 0.05)
 
 
+EVAL_SCORE_MAX_CNT: float = 30000.0  # 評価件数スコアの満点閾値
+
 def calc_eval_score(all_hyoka_cnt: int | float | None) -> float:
-    """評価件数スコアを計算する（1000件で満点）。"""
+    """評価件数スコアを計算する（30000件で満点）。"""
     if all_hyoka_cnt is None or (isinstance(all_hyoka_cnt, float) and math.isnan(all_hyoka_cnt)):
         return 0.0
-    return min(1.0, float(all_hyoka_cnt) / 1000.0)
+    return min(1.0, float(all_hyoka_cnt) / EVAL_SCORE_MAX_CNT)
 
 
 def calc_best_rank_ever(ncode: str, snapshots: pd.DataFrame) -> int | None:
@@ -354,6 +356,9 @@ def main() -> None:
             "weekly_unique_latest": _nan_to_none(novel.get("weekly_unique_latest")),
             "all_point_latest": _nan_to_none(novel.get("all_point_latest")),
             "all_hyoka_cnt_latest": _nan_to_none(all_hyoka_cnt_val),
+            "impression_cnt_latest": _nan_to_none(novel.get("impression_cnt_latest")),
+            "review_cnt_latest": _nan_to_none(novel.get("review_cnt_latest")),
+            "story": str(novel.get("story", "")) if not (isinstance(novel.get("story"), float) and math.isnan(novel.get("story"))) else "",
             "episode_count_latest": _nan_to_none(novel.get("episode_count_latest")),
             "best_rank_ever": best_rank_ever,
             "updated_at": str(novel.get("updated_at", "")),

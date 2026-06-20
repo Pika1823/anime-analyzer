@@ -11,6 +11,9 @@ let currentWeights = { genre: 25, tag: 20, rank: 20, bmView: 15, growth: 10, eva
 let currentPage = 0;
 const PAGE_SIZE = 100;
 
+// 並び替え
+let sortBy = 'score';
+
 // Chart.js インスタンス（再描画時に破棄する）
 let comparisonChart = null;
 let rankingTrendChart = null;
@@ -53,6 +56,7 @@ async function loadData() {
   }
 
   currentWeights = loadWeights();
+  renderFactorBars(currentWeights);
   renderRanking(currentWeights);
   populateTrendsSelects();
   renderSettings();
@@ -141,7 +145,19 @@ function renderRanking(weights) {
       if (filterTop10 && (n.best_rank_ever == null || n.best_rank_ever > 10)) return false;
       return true;
     })
-    .sort((a, b) => b._score - a._score);
+    .sort((a, b) => {
+      if (sortBy === 'score') return b._score - a._score;
+      // 順位系: 値が小さいほど上位（null は末尾）
+      if (sortBy === 'monthly_rank_latest' || sortBy === 'best_rank_ever') {
+        const av = a[sortBy] != null ? a[sortBy] : Infinity;
+        const bv = b[sortBy] != null ? b[sortBy] : Infinity;
+        return av - bv;
+      }
+      // 数値系: 値が大きいほど上位（null は末尾）
+      const av = a[sortBy] != null ? a[sortBy] : -Infinity;
+      const bv = b[sortBy] != null ? b[sortBy] : -Infinity;
+      return bv - av;
+    });
 
   if (ranked.length === 0) {
     tbody.innerHTML =
@@ -248,10 +264,13 @@ function renderComparison(ncode) {
         <span><strong>月刊順位:</strong> ${novel.monthly_rank_latest ?? '—'}</span>
         <span><strong>歴代最高順位:</strong> ${novel.best_rank_ever ?? '—'}</span>
         <span><strong>評価件数:</strong> ${novel.all_hyoka_cnt_latest != null ? novel.all_hyoka_cnt_latest.toLocaleString() + ' 件' : '—'}</span>
+        <span><strong>評価ポイント:</strong> ${novel.all_point_latest != null ? novel.all_point_latest.toLocaleString() + ' pt' : '—'}</span>
+        <span><strong>感想件数:</strong> ${novel.impression_cnt_latest != null ? novel.impression_cnt_latest.toLocaleString() + ' 件' : '—'}</span>
         <span><strong>スコア:</strong> ${score.toFixed(3)}</span>
         <span><strong>最類似アニメ:</strong> ${escHtml(animeTitle || '—')}</span>
         <span><strong>Nコード:</strong> <a class="novel-link" href="${narouUrl}" target="_blank" rel="noopener">${ncode}</a></span>
       </div>
+      ${novel.story ? `<div class="novel-story">${escHtml(novel.story)}</div>` : ''}
     </div>
     ${rankHistory.length >= 2
       ? `<div class="card"><h4 class="chart-title">月刊ランキング推移</h4><div class="chart-container"><canvas id="ranking-trend-chart"></canvas></div></div>`
@@ -570,6 +589,33 @@ function renderTrends() {
   });
 }
 
+// ---- 説明パネルのファクターバーを現在の重みで動的描画 ----
+function renderFactorBars(weights) {
+  const container = document.getElementById('score-factors');
+  if (!container) return;
+
+  const factors = [
+    { key: 'genre',  label: 'ジャンル一致',  desc: 'ファンタジー・恋愛など大分類が同じか' },
+    { key: 'tag',    label: 'タグ類似度',    desc: '「転生」「異世界」など共通キーワードの割合' },
+    { key: 'rank',   label: 'ランク帯',      desc: '月刊1〜100位=高、101〜300=中、301〜=低' },
+    { key: 'bmView', label: 'BM/View比率',   desc: 'ブックマーク数 ÷ 総閲覧数（コア読者の定着度）' },
+    { key: 'growth', label: 'View成長率',    desc: '直近6ヶ月の閲覧数の伸び（データ蓄積後に有効）' },
+    { key: 'eval',   label: '評価件数',      desc: '累計評価件数（30000件で満点 — いいね数の代替）' },
+  ];
+  const totalW = factors.reduce((s, f) => s + (weights[f.key] || 0), 0) || 1;
+
+  container.innerHTML = factors.map((f) => {
+    const w = weights[f.key] || 0;
+    const pct = Math.round((w / totalW) * 100);
+    return `<div class="factor-row">
+      <span class="factor-label">${f.label}</span>
+      <div class="factor-bar-bg"><div class="factor-bar" style="width:${pct}%"></div></div>
+      <span class="factor-weight">${w}%</span>
+      <span class="factor-desc">${f.desc}</span>
+    </div>`;
+  }).join('');
+}
+
 // ---- View 4: 設定 ----
 function renderSettings() {
   updateWeightUI();
@@ -617,6 +663,7 @@ function applyWeights() {
   currentWeights = newWeights;
   saveWeights(currentWeights);
   currentPage = 0;
+  renderFactorBars(currentWeights);
   renderRanking(currentWeights);
   // 選択中の作品があれば比較グラフも更新
   if (selectedNcode) renderComparison(selectedNcode);
@@ -626,6 +673,7 @@ function resetWeights() {
   currentWeights = { ...DEFAULT_WEIGHTS };
   saveWeights(currentWeights);
   updateWeightUI();
+  renderFactorBars(currentWeights);
   renderRanking(currentWeights);
 }
 
@@ -744,6 +792,13 @@ document.addEventListener('DOMContentLoaded', () => {
     infoChevron.textContent = isCollapsed ? '▼' : '▲';
     infoToggle.setAttribute('aria-expanded', String(!isCollapsed));
     localStorage.setItem(INFO_LS_KEY, String(!isCollapsed));
+  });
+
+  // 並び替えドロップダウン
+  document.getElementById('sort-by').addEventListener('change', (e) => {
+    sortBy = e.target.value;
+    currentPage = 0;
+    renderRanking(currentWeights);
   });
 
   // データ読み込み開始
