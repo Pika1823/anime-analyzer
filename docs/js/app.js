@@ -14,6 +14,15 @@ const PAGE_SIZE = 100;
 // 並び替え
 let sortBy = 'score';
 
+// 並び替え列の定義（score と monthly_rank_latest は既存列のため追加不要）
+const SORT_EXTRA_COL = {
+  all_hyoka_cnt_latest:   { label: '評価件数',        fmt: (v) => v != null ? v.toLocaleString() + ' 件' : '—' },
+  all_point_latest:       { label: '評価ポイント',     fmt: (v) => v != null ? v.toLocaleString() + ' pt'  : '—' },
+  cumulative_view_latest: { label: '総合評価（代替）', fmt: (v) => v != null ? v.toLocaleString()           : '—' },
+  impression_cnt_latest:  { label: '感想件数',         fmt: (v) => v != null ? v.toLocaleString() + ' 件' : '—' },
+  best_rank_ever:         { label: '歴代最高順位',     fmt: (v) => v != null ? v + ' 位'                   : '—' },
+};
+
 // Chart.js インスタンス（再描画時に破棄する）
 let comparisonChart = null;
 let rankingTrendChart = null;
@@ -159,11 +168,29 @@ function renderRanking(weights) {
       return bv - av;
     });
 
+  // 並び替え列（既存列以外）
+  const extraCol = SORT_EXTRA_COL[sortBy] || null;
+  const colCount = extraCol ? 7 : 6;
+
   if (ranked.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="6" class="placeholder">条件に合う作品がありません。</td></tr>';
+      `<tr><td colspan="${colCount}" class="placeholder">条件に合う作品がありません。</td></tr>`;
     renderPagination(0, 0);
     return;
+  }
+
+  // ヘッダー更新
+  const thead = document.getElementById('ranking-head');
+  if (thead) {
+    thead.innerHTML = `<tr>
+      <th>順位</th>
+      <th>タイトル</th>
+      <th>ジャンル</th>
+      <th>月刊順位</th>
+      ${extraCol ? `<th>${extraCol.label}</th>` : ''}
+      <th>スコア <span class="th-tooltip" title="アニメ化済み作品との類似度（0.00〜1.00）。クリックで内訳を表示">ⓘ</span></th>
+      <th>最類似アニメ <span class="th-tooltip" title="スコアが最も高かった比較対象のアニメ作品">ⓘ</span></th>
+    </tr>`;
   }
 
   const totalPages = Math.ceil(ranked.length / PAGE_SIZE);
@@ -177,11 +204,13 @@ function renderRanking(weights) {
       const scorePct = Math.round(n._score * 100);
       const barWidth = Math.max(2, scorePct);
       const animeBadge = n.is_anime ? ' <span class="anime-badge">アニメ化済み</span>' : '';
+      const extraCell = extraCol ? `<td>${extraCol.fmt(n[sortBy])}</td>` : '';
       return `<tr data-ncode="${n.ncode}" data-anime-id="${n._animeId || ''}">
         <td>${pageOffset + i + 1}</td>
         <td>${escHtml(n.title)}${animeBadge}</td>
         <td>${escHtml(n.genre_label || '—')}</td>
         <td>${n.monthly_rank_latest != null ? n.monthly_rank_latest : '—'}</td>
+        ${extraCell}
         <td>
           <div class="score-bar-wrap">
             <div class="score-bar" style="width:${barWidth}px"></div>
