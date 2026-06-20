@@ -59,16 +59,27 @@ function calcScore(novel, weights) {
     return { score: 0, animeId: null, animeTitle: null };
   }
 
+  // 重みの合計でスコアを正規化（合計が 100 でなくても正しく動作する）
+  const totalWeight =
+    (weights.genre || 0) +
+    (weights.tag || 0) +
+    (weights.rank || 0) +
+    (weights.bmView || 0) +
+    (weights.growth || 0) +
+    (weights.eval || 0);
+
+  if (totalWeight === 0) return { score: 0, animeId: null, animeTitle: null };
+
   let best = { score: -1, animeId: null, animeTitle: null };
   for (const entry of novel.pattern1_scores) {
     const s =
-      (entry.genre_score * weights.genre +
-        entry.tag_score * weights.tag +
-        entry.rank_score * weights.rank +
-        entry.bm_view_score * weights.bmView +
-        entry.growth_score * weights.growth +
+      (entry.genre_score * (weights.genre || 0) +
+        entry.tag_score * (weights.tag || 0) +
+        entry.rank_score * (weights.rank || 0) +
+        entry.bm_view_score * (weights.bmView || 0) +
+        entry.growth_score * (weights.growth || 0) +
         (entry.eval_score || 0) * (weights.eval || 0)) /
-      100;
+      totalWeight;
     if (s > best.score) {
       best = { score: s, animeId: entry.anime_id, animeTitle: entry.anime_title };
     }
@@ -435,8 +446,8 @@ function updateWeightTotal() {
   }, 0);
   const totalEl = document.getElementById('weight-total');
   if (totalEl) {
-    totalEl.textContent = `合計: ${total}%`;
-    totalEl.className = 'weight-total' + (total !== 100 ? ' error' : '');
+    totalEl.textContent = `合計: ${total}%（自動正規化して適用されます）`;
+    totalEl.className = 'weight-total' + (total === 0 ? ' error' : '');
   }
 }
 
@@ -450,13 +461,14 @@ function applyWeights() {
     total += v;
   });
 
-  if (total !== 100) {
-    alert(`重みの合計が ${total}% です。合計が 100% になるよう調整してください。`);
+  if (total === 0) {
+    alert('重みの合計が 0% です。少なくとも 1 つの指標に値を設定してください。');
     return;
   }
 
   currentWeights = newWeights;
   saveWeights(currentWeights);
+  currentPage = 0;
   renderRanking(currentWeights);
   // 選択中の作品があれば比較グラフも更新
   if (selectedNcode) renderComparison(selectedNcode);
