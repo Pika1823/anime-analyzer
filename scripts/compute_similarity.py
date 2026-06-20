@@ -67,6 +67,7 @@ DEFAULT_WEIGHTS: dict[str, float] = {
 NOVELS_MERGED_JSON = DOCS_DATA_DIR / "novels_merged.json"
 TRENDS_MERGED_JSON = DOCS_DATA_DIR / "trends_merged.json"
 SIMILARITY_JSON = DOCS_DATA_DIR / "similarity.json"
+SNAPSHOTS_MERGED_JSON = DOCS_DATA_DIR / "snapshots_merged.json"
 
 
 def get_genre_label(genre_code: str) -> str:
@@ -434,6 +435,32 @@ def main() -> None:
         json.dumps(similarity, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     logger.info(f"similarity.json を出力しました: {SIMILARITY_JSON}")
+
+    # snapshots_merged.json 出力（ランキング推移グラフ用）
+    snapshots_by_ncode: dict[str, list] = {}
+    if not snapshots_df.empty and "monthly_rank" in snapshots_df.columns:
+        snap_sorted = snapshots_df.sort_values("date")
+        for _, row in snap_sorted.iterrows():
+            ncode_val = str(row.get("ncode", ""))
+            date_val = str(row.get("date", ""))
+            rank_val = _nan_to_none(row.get("monthly_rank"))
+            bm_val = _nan_to_none(row.get("bookmark_count"))
+            if not ncode_val or not date_val:
+                continue
+            snapshots_by_ncode.setdefault(ncode_val, []).append({
+                "date": date_val,
+                "monthly_rank": int(rank_val) if rank_val is not None else None,
+                "bookmark_count": int(bm_val) if bm_val is not None else None,
+            })
+
+    snapshots_merged = {
+        "generated_at": today_str,
+        "snapshots": snapshots_by_ncode,
+    }
+    SNAPSHOTS_MERGED_JSON.write_text(
+        json.dumps(snapshots_merged, ensure_ascii=False), encoding="utf-8"
+    )
+    logger.info(f"snapshots_merged.json を出力しました: {SNAPSHOTS_MERGED_JSON}")
 
     # サマリーログ
     total = len(novel_records)

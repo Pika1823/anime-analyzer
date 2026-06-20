@@ -3,6 +3,7 @@
 // ---- モジュール状態 ----
 let novelsData = null;
 let trendsData = null;
+let snapshotsData = null;
 let selectedNcode = null;
 let currentWeights = { genre: 25, tag: 20, rank: 20, bmView: 15, growth: 10, eval: 10 };
 
@@ -12,6 +13,7 @@ const PAGE_SIZE = 100;
 
 // Chart.js インスタンス（再描画時に破棄する）
 let comparisonChart = null;
+let rankingTrendChart = null;
 let trendsChart = null;
 
 const DEFAULT_WEIGHTS = { genre: 25, tag: 20, rank: 20, bmView: 15, growth: 10, eval: 10 };
@@ -21,9 +23,10 @@ const LS_KEY = 'animeTool.weights';
 async function loadData() {
   showLoading();
   try {
-    const [novelsRes, trendsRes] = await Promise.allSettled([
+    const [novelsRes, trendsRes, snapshotsRes] = await Promise.allSettled([
       fetch('./data/novels_merged.json'),
       fetch('./data/trends_merged.json'),
+      fetch('./data/snapshots_merged.json'),
     ]);
 
     if (novelsRes.status === 'fulfilled' && novelsRes.value.ok) {
@@ -36,6 +39,12 @@ async function loadData() {
       trendsData = await trendsRes.value.json();
     } else {
       trendsData = null;
+    }
+
+    if (snapshotsRes.status === 'fulfilled' && snapshotsRes.value.ok) {
+      snapshotsData = await snapshotsRes.value.json();
+    } else {
+      snapshotsData = null;
     }
   } catch (e) {
     novelsData = null;
@@ -217,6 +226,8 @@ function renderComparison(ncode) {
   const { score, animeId, animeTitle } = calcScore(novel, currentWeights);
   const bestEntry = novel.pattern1_scores?.find((e) => e.anime_id === animeId) || null;
 
+  const rankHistory = snapshotsData?.snapshots?.[ncode] || [];
+
   container.innerHTML = `
     <div class="card">
       <h3>${escHtml(novel.title)}</h3>
@@ -224,21 +235,80 @@ function renderComparison(ncode) {
         <span><strong>著者:</strong> ${escHtml(novel.author || '—')}</span>
         <span><strong>ジャンル:</strong> ${escHtml(novel.genre_label || '—')}</span>
         <span><strong>月刊順位:</strong> ${novel.monthly_rank_latest ?? '—'}</span>
+        <span><strong>歴代最高順位:</strong> ${novel.best_rank_ever ?? '—'}</span>
         <span><strong>スコア:</strong> ${score.toFixed(3)}</span>
         <span><strong>最類似アニメ:</strong> ${escHtml(animeTitle || '—')}</span>
       </div>
     </div>
-    <div class="card">
-      <p style="color:#888; font-size:0.875rem; margin-bottom:1rem;">
-        スナップショットデータ収集中です。毎日データが蓄積されると比較グラフが表示されます。
-      </p>
-    </div>
-    ${bestEntry ? `<div class="chart-container"><canvas id="score-breakdown-chart"></canvas></div>` : ''}
+    ${rankHistory.length >= 2
+      ? `<div class="card"><h4 class="chart-title">月刊ランキング推移</h4><div class="chart-container"><canvas id="ranking-trend-chart"></canvas></div></div>`
+      : `<div class="card"><p style="color:#888;font-size:0.875rem;">ランキング推移データ蓄積中です（現在 ${rankHistory.length} 件）。毎日追記されます。</p></div>`
+    }
+    ${bestEntry ? `<div class="card"><h4 class="chart-title">スコア内訳（vs ${escHtml(animeTitle || '')}）</h4><div class="chart-container"><canvas id="score-breakdown-chart"></canvas></div></div>` : ''}
   `;
 
+  if (rankHistory.length >= 2) {
+    renderRankingTrend(rankHistory, novel.title);
+  }
   if (bestEntry) {
     renderScoreBreakdown(bestEntry, animeTitle);
   }
+}
+
+function renderRankingTrend(history, novelTitle) {
+  const ctx = document.getElementById('ranking-trend-chart');
+  if (!ctx) return;
+
+  if (rankingTrendChart) {
+    rankingTrendChart.destroy();
+    rankingTrendChart = null;
+  }
+
+  const sorted = [...history].sort((a, b) => a.date.localeCompare(b.date));
+  const labels = sorted.map((d) => d.date);
+  const ranks = sorted.map((d) => d.monthly_rank);
+
+  rankingTrendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: `月刊ランク: ${novelTitle}`,
+          data: ranks,
+          borderColor: '#e94560',
+          backgroundColor: 'rgba(233,69,96,0.08)',
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          spanGaps: false,
+          tension: 0.2,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          reverse: true,
+          title: { display: true, text: '月刊順位（↑ 上位）' },
+          ticks: { stepSize: 50 },
+          min: 1,
+        },
+        x: {
+          ticks: { maxTicksLimit: 12, maxRotation: 45 },
+        },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (c) => ` ${c.parsed.y != null ? c.parsed.y + '位' : 'データなし'}`,
+          },
+        },
+      },
+    },
+  });
 }
 
 function renderScoreBreakdown(entry, animeTitle) {

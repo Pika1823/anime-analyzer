@@ -257,6 +257,13 @@ tbody td {
   margin-bottom: 1.25rem;
 }
 
+.chart-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 0.75rem;
+}
+
 /* Trendsビュー */
 .trends-controls {
   display: flex;
