@@ -5,7 +5,7 @@ let novelsData = null;
 let trendsData = null;
 let snapshotsData = null;
 let selectedNcode = null;
-let currentWeights = { genre: 25, tag: 20, rank: 20, bmView: 15, growth: 10, eval: 10 };
+let currentWeights = { genre: 0, tag: 0, rank: 34, bmView: 33, growth: 0, eval: 33 };
 
 // ページネーション
 let currentPage = 0;
@@ -20,7 +20,7 @@ let rankingTrendChart = null;
 let evalTrendChart = null;
 let trendsChart = null;
 
-const DEFAULT_WEIGHTS = { genre: 25, tag: 20, rank: 20, bmView: 15, growth: 10, eval: 10 };
+const DEFAULT_WEIGHTS = { genre: 0, tag: 0, rank: 34, bmView: 33, growth: 0, eval: 33 };
 const LS_KEY = 'animeTool.weights';
 
 // ---- データ読み込み ----

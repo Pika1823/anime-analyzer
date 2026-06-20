@@ -163,48 +163,48 @@
           <label for="weight-genre">ジャンル一致</label>
           <span class="weight-hint">同じ大分類（ファンタジー・恋愛等）かどうか</span>
         </div>
-        <input type="range" id="weight-genre" min="0" max="100" step="1" value="25" />
-        <span class="weight-val" id="weight-genre-val">25%</span>
+        <input type="range" id="weight-genre" min="0" max="100" step="1" value="0" />
+        <span class="weight-val" id="weight-genre-val">0%</span>
       </div>
       <div class="weight-row">
         <div class="weight-label-wrap">
           <label for="weight-tag">タグ類似度</label>
           <span class="weight-hint">共通タグの割合（Jaccard係数）</span>
         </div>
-        <input type="range" id="weight-tag" min="0" max="100" step="1" value="20" />
-        <span class="weight-val" id="weight-tag-val">20%</span>
+        <input type="range" id="weight-tag" min="0" max="100" step="1" value="0" />
+        <span class="weight-val" id="weight-tag-val">0%</span>
       </div>
       <div class="weight-row">
         <div class="weight-label-wrap">
           <label for="weight-rank">ランク帯</label>
           <span class="weight-hint">月刊1〜100位=1.0 / 101〜300位=0.6 / 301〜=0.3</span>
         </div>
-        <input type="range" id="weight-rank" min="0" max="100" step="1" value="20" />
-        <span class="weight-val" id="weight-rank-val">20%</span>
+        <input type="range" id="weight-rank" min="0" max="100" step="1" value="34" />
+        <span class="weight-val" id="weight-rank-val">34%</span>
       </div>
       <div class="weight-row">
         <div class="weight-label-wrap">
           <label for="weight-bmView">BM/View比率</label>
           <span class="weight-hint">ブックマーク ÷ 総閲覧数（コア読者定着度）</span>
         </div>
-        <input type="range" id="weight-bmView" min="0" max="100" step="1" value="15" />
-        <span class="weight-val" id="weight-bmView-val">15%</span>
+        <input type="range" id="weight-bmView" min="0" max="100" step="1" value="33" />
+        <span class="weight-val" id="weight-bmView-val">33%</span>
       </div>
       <div class="weight-row">
         <div class="weight-label-wrap">
           <label for="weight-growth">View成長率</label>
           <span class="weight-hint">直近6ヶ月の閲覧増加率（※データ蓄積後に有効）</span>
         </div>
-        <input type="range" id="weight-growth" min="0" max="100" step="1" value="10" />
-        <span class="weight-val" id="weight-growth-val">10%</span>
+        <input type="range" id="weight-growth" min="0" max="100" step="1" value="0" />
+        <span class="weight-val" id="weight-growth-val">0%</span>
       </div>
       <div class="weight-row">
         <div class="weight-label-wrap">
           <label for="weight-eval">評価件数</label>
-          <span class="weight-hint">累計評価件数（1000件で満点 — いいね数の代替）</span>
+          <span class="weight-hint">累計評価件数（30000件で満点 — いいね数の代替）</span>
         </div>
-        <input type="range" id="weight-eval" min="0" max="100" step="1" value="10" />
-        <span class="weight-val" id="weight-eval-val">10%</span>
+        <input type="range" id="weight-eval" min="0" max="100" step="1" value="33" />
+        <span class="weight-val" id="weight-eval-val">33%</span>
       </div>
 
       <p class="weight-total" id="weight-total">合計: 100%</p>
