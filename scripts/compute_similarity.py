@@ -529,7 +529,7 @@ def main() -> None:
             "story": str(novel.get("story", "")) if not (isinstance(novel.get("story"), float) and math.isnan(novel.get("story"))) else "",
             "best_rank_ever": best_rank_ever,
             "updated_at": str(novel.get("updated_at", "")),
-            "cumulative_view_latest": cumulative_view_latest,
+            "global_point_latest": global_point_latest,
             "bm_view_ratio": bm_view_ratio,
             "view_growth_6mo": round(view_growth_6mo, 4),
             "eval_score": round(eval_score, 4),
