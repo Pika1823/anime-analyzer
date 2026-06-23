@@ -1,4 +1,4 @@
-date,ncode,cumulative_view,daily_view,bookmark_count,monthly_rank,weekly_rank,weekly_unique,all_point,all_hyoka_cnt,episode_count
+date,ncode,global_point,global_point_delta,bookmark_count,monthly_rank,weekly_rank,weekly_unique,all_point,all_hyoka_cnt,episode_count
 2026-06-19,N1189MF,66584.0,,0.0,1.0,,,57474.0,6187.0,1.0
 2026-06-19,N3126MF,58178.0,,0.0,2.0,,,38724.0,4208.0,43.0
 2026-06-19,N6050MG,49440.0,,0.0,3.0,,,44924.0,5072.0,1.0

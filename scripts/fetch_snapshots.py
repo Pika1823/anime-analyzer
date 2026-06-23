@@ -9,6 +9,7 @@ from datetime import date, timedelta
 import pandas as pd
 import requests
 
+from narou_config import SNAPSHOTS_API_MAP  # noqa: F401（APIフィールド名の参照用）
 from utils import (
     DAILY_SNAPSHOTS_CSV,
     NAROU_API_URL,
@@ -41,16 +42,17 @@ def fetch_novel_snapshot(ncode: str) -> dict | None:
         return None
 
 
-def calc_daily_view(
+def calc_global_point_delta(
     ncode: str,
-    cumulative_view: int,
+    global_point: int,
     snapshots: pd.DataFrame,
     today: date,
 ) -> int | None:
     """
-    前日の累計 view と現在の累計 view の差分を計算して日次 view を返す。
+    前日の global_point と現在の global_point の差分を計算して返す。
 
-    前日データが存在しない場合、または前日の cumulative_view が NaN の場合は None を返す。
+    前日データが存在しない場合、または前日の global_point が NaN の場合は None を返す。
+    global_point は総合評価ポイント（なろうAPIに累計View数フィールドは存在しないため代替指標として使用）。
     """
     if snapshots.empty:
         return None
@@ -64,17 +66,17 @@ def calc_daily_view(
     if prev_rows.empty:
         return None
 
-    prev_cumulative = prev_rows.iloc[-1]["cumulative_view"]
+    prev_global_point = prev_rows.iloc[-1]["global_point"]
 
     # NaN チェック
     try:
-        if pd.isna(prev_cumulative):
+        if pd.isna(prev_global_point):
             return None
     except (TypeError, ValueError):
         return None
 
-    result = int(cumulative_view) - int(prev_cumulative)
-    # 累計 view の減少（データ補正等）による負値を 0 にクランプする
+    result = int(global_point) - int(prev_global_point)
+    # ポイントの減少（データ補正等）による負値を 0 にクランプする
     return max(result, 0)
 
 
@@ -107,13 +109,13 @@ def main() -> None:
         if detail is None:
             continue
 
-        # out=json では累積View数が取得できないため global_point を代替指標として使用
-        cumulative_view = detail.get("global_point")
-        if cumulative_view is None:
+        # なろうAPIに累計View数フィールドは存在しないため、global_point（総合評価ポイント）を代替指標として使用
+        global_point = detail.get("global_point")
+        if global_point is None:
             logger.warning("ncode=%s: global_point フィールドが存在しないためスキップ", ncode)
             continue
 
-        daily_view = calc_daily_view(ncode, cumulative_view, snapshots, today)
+        global_point_delta = calc_global_point_delta(ncode, global_point, snapshots, today)
 
         # monthly_rank_latest が None/NaN の場合はランク外として 1001 を記録する
         _rank = row.get("monthly_rank_latest")
@@ -122,9 +124,9 @@ def main() -> None:
         new_rows.append({
             "date": today_str,
             "ncode": ncode,
-            "cumulative_view": cumulative_view,
-            "daily_view": daily_view,
-            "bookmark_count": detail.get("bookmarkcount", 0),
+            "global_point": global_point,
+            "global_point_delta": global_point_delta,
+            "bookmark_count": detail.get("fav_novel_cnt", 0),
             "monthly_rank": monthly_rank_for_snap,
             "weekly_rank": None,
             "weekly_unique": detail.get("weekly_unique"),

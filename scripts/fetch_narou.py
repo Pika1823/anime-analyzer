@@ -11,6 +11,7 @@ from difflib import SequenceMatcher
 import pandas as pd
 import requests
 
+from narou_config import NOVELS_API_MAP  # noqa: F401（APIフィールド名の参照用）
 from utils import (
     ANIME_WORKS_CSV,
     NAROU_API_URL,
@@ -230,13 +231,14 @@ def build_novels_df(raw: list[dict], anime_ncodes: set[str]) -> pd.DataFrame:
                 "ncode": ncode,
                 "title": item.get("title", ""),
                 "author": item.get("writer", ""),
+                "biggenre": item.get("biggenre", ""),
                 "genre": item.get("genre", ""),
                 "tags": item.get("keyword", ""),
                 "story": item.get("story", ""),
                 "is_anime": ncode in anime_ncodes,
                 "anime_id": "",
                 "monthly_rank_latest": rank,
-                "bookmark_count_latest": int(item.get("fav_novel_cnt") or item.get("bookmarkcount") or 0),
+                "bookmark_count_latest": int(item.get("fav_novel_cnt") or 0),
                 "weekly_unique_latest": int(item.get("weekly_unique") or 0),
                 "length": int(item.get("length") or 0),
                 "global_point_latest": int(item.get("global_point") or 0),
@@ -245,9 +247,12 @@ def build_novels_df(raw: list[dict], anime_ncodes: set[str]) -> pd.DataFrame:
                 "monthly_point_latest": int(item.get("monthly_point") or 0),
                 "all_point_latest": int(item.get("all_point") or 0),
                 "all_hyoka_cnt_latest": int(item.get("all_hyoka_cnt") or 0),
-                "impression_cnt_latest": int(item.get("impressioncnt") or 0),
-                "review_cnt_latest": int(item.get("reviewcnt") or 0),
+                "impression_cnt_latest": int(item.get("impression_cnt") or 0),
+                "review_cnt_latest": int(item.get("review_cnt") or 0),
                 "episode_count_latest": int(item.get("general_all_no") or 0),
+                "is_isekai_tensei": int(item.get("istensei") or 0),
+                "is_isekai_tenni": int(item.get("istenni") or 0),
+                "is_completed": int(item.get("end") or 0),
                 "general_lastup": _unix_to_iso(item.get("general_lastup")),
                 "novel_updated_at": _unix_to_iso(item.get("novelupdated_at")),
                 "updated_at": today,

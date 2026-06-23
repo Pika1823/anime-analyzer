@@ -16,6 +16,7 @@ import pandas as pd
 # scripts/ ディレクトリを sys.path に追加して utils をインポートできるようにする
 sys.path.insert(0, str(Path(__file__).parent))
 
+from narou_config import GENRE_LABEL, PATTERN1_WEIGHTS
 from utils import (
     ANIME_WORKS_CSV,
     ANNICT_WORKS_CSV,
@@ -30,46 +31,12 @@ from utils import (
 
 logger = get_logger(__name__)
 
-# なろうジャンルコード → カテゴリ名マッピング
-NAROU_GENRE_CATEGORY: dict[str, str] = {
-    "101": "ファンタジー",
-    "102": "ファンタジー",
-    "201": "恋愛",
-    "202": "恋愛",
-    "301": "SF",
-    "302": "SF",
-    "303": "SF",
-    "304": "SF",
-    "307": "SF",
-    "401": "文芸",
-    "402": "文芸",
-    "403": "文芸",
-    "404": "文芸",
-    "405": "文芸",
-    "406": "文芸",
-    "407": "文芸",
-    "408": "文芸",
-    "409": "文芸",
-    "410": "文芸",
-    "411": "文芸",
-    "9999": "ノンジャンル",
-}
-
 # 成長メトリクス計算用定数
 GROWTH_PERIODS: list[tuple[int, str]] = [(1, "1d"), (7, "7d"), (30, "30d")]
 GROWTH_METRICS_KEYS: list[str] = ["all_hyoka_cnt", "all_point"]
 
-# Pattern1 スコア計算の重みパラメータ（仮説ベース）
-DEFAULT_WEIGHTS: dict[str, float] = {
-    "genre":         0.25,
-    "tag":           0.20,
-    "rank":          0.20,
-    "bm_view":       0.15,
-    "growth":        0.10,
-    "eval":          0.10,
-    "monthly_point": 0.0,   # 月間ポイントスコア（データ取得後に調整）
-    "activity":      0.0,   # 活性スコア（最終更新日ベース）
-}
+# スコア重みは narou_config.PATTERN1_WEIGHTS を使用（ここではエイリアスとして参照）
+DEFAULT_WEIGHTS = PATTERN1_WEIGHTS
 
 # 出力 JSON ファイルパス（GitHub Pages から参照するため docs/data/ に出力）
 NOVELS_MERGED_JSON = DOCS_DATA_DIR / "novels_merged.json"
@@ -80,7 +47,7 @@ SNAPSHOTS_MERGED_JSON = DOCS_DATA_DIR / "snapshots_merged.json"
 
 def get_genre_label(genre_code: str) -> str:
     """ジャンルコードからカテゴリ名を返す。未定義の場合は「その他」を返す。"""
-    return NAROU_GENRE_CATEGORY.get(str(genre_code), "その他")
+    return GENRE_LABEL.get(str(genre_code), "その他")
 
 
 def calc_tag_jaccard(tags_a: str, tags_b: str) -> float:
@@ -278,7 +245,7 @@ def calc_growth_metrics(ncode: str, snapshots: pd.DataFrame) -> dict:
 
 
 def calc_view_growth(ncode: str, snapshots: pd.DataFrame) -> float:
-    """過去 180 日間の累計 View 数成長率を計算する。"""
+    """過去 180 日間の global_point（総合評価ポイント）成長率を計算する。"""
     if snapshots.empty or "ncode" not in snapshots.columns:
         return 0.0
 
@@ -296,8 +263,10 @@ def calc_view_growth(ncode: str, snapshots: pd.DataFrame) -> float:
     if len(novel_snaps) < 2:
         return 0.0
 
-    oldest = novel_snaps.iloc[0]["cumulative_view"]
-    latest = novel_snaps.iloc[-1]["cumulative_view"]
+    # global_point 列がない場合は旧カラム名 cumulative_view にフォールバック（移行期の互換性）
+    point_col = "global_point" if "global_point" in novel_snaps.columns else "cumulative_view"
+    oldest = novel_snaps.iloc[0][point_col]
+    latest = novel_snaps.iloc[-1][point_col]
 
     try:
         oldest_val = float(oldest)
@@ -352,14 +321,14 @@ def calc_pattern1_score(
     activity_score = novel_activity_score
 
     score = (
-        DEFAULT_WEIGHTS["genre"]         * genre_score
-        + DEFAULT_WEIGHTS["tag"]         * tag_score
-        + DEFAULT_WEIGHTS["rank"]        * rank_score
-        + DEFAULT_WEIGHTS["bm_view"]     * bm_view_score
-        + DEFAULT_WEIGHTS["growth"]      * growth_score
-        + DEFAULT_WEIGHTS["eval"]        * eval_score
+        DEFAULT_WEIGHTS["genre"]           * genre_score
+        + DEFAULT_WEIGHTS["tag"]           * tag_score
+        + DEFAULT_WEIGHTS["rank"]          * rank_score
+        + DEFAULT_WEIGHTS["bm_view"]       * bm_view_score
+        + DEFAULT_WEIGHTS["growth"]        * growth_score
+        + DEFAULT_WEIGHTS["eval"]          * eval_score
         + DEFAULT_WEIGHTS["monthly_point"] * monthly_point_score
-        + DEFAULT_WEIGHTS["activity"]    * activity_score
+        + DEFAULT_WEIGHTS["activity"]      * activity_score
     )
 
     return {
@@ -426,15 +395,17 @@ def main() -> None:
         ncode = str(novel.get("ncode", ""))
         is_anime = str(novel.get("is_anime", "False")).lower() == "true"
 
-        # スナップショットから最新累計 View 数を取得
+        # スナップショットから最新 global_point（総合評価ポイント）を取得
         latest_snap = get_latest_snapshot(ncode, snapshots_df)
-        cumulative_view_latest: int | None = None
-        if latest_snap and "cumulative_view" in latest_snap:
-            cv = latest_snap["cumulative_view"]
+        global_point_latest: int | None = None
+        if latest_snap:
+            # global_point 列がない場合は旧カラム名 cumulative_view にフォールバック（移行期の互換性）
+            gp_col = "global_point" if "global_point" in latest_snap else "cumulative_view"
+            gp = latest_snap.get(gp_col)
             try:
-                cumulative_view_latest = int(float(cv)) if cv is not None and not (isinstance(cv, float) and math.isnan(cv)) else None
+                global_point_latest = int(float(gp)) if gp is not None and not (isinstance(gp, float) and math.isnan(gp)) else None
             except (ValueError, TypeError):
-                cumulative_view_latest = None
+                global_point_latest = None
 
         # bm_view スコア計算
         bookmark = novel.get("bookmark_count_latest", 0)
@@ -442,11 +413,11 @@ def main() -> None:
             bookmark_val = float(bookmark) if bookmark is not None else 0.0
         except (ValueError, TypeError):
             bookmark_val = 0.0
-        bm_view_score = calc_bm_view_score(bookmark_val, cumulative_view_latest)
+        bm_view_score = calc_bm_view_score(bookmark_val, global_point_latest)
 
         # bm_view_ratio 計算
-        if cumulative_view_latest and cumulative_view_latest > 0:
-            bm_view_ratio = round(bookmark_val / cumulative_view_latest, 6)
+        if global_point_latest and global_point_latest > 0:
+            bm_view_ratio = round(bookmark_val / global_point_latest, 6)
         else:
             bm_view_ratio = None
 

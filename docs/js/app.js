@@ -1212,6 +1212,12 @@ function renderSettings() {
 
 const WEIGHT_KEYS = ['genre', 'tag', 'rank', 'bmView', 'growth', 'eval', 'monthlyPoint', 'activity'];
 
+// URL クエリパラメータとの対応マップ（短縮キーで URL を簡潔に保つ）
+const WEIGHT_URL_KEYS = {
+  genre: 'g', tag: 't', rank: 'r', bmView: 'bv',
+  growth: 'gr', eval: 'ev', monthlyPoint: 'mp', activity: 'ac',
+};
+
 function updateWeightUI() {
   WEIGHT_KEYS.forEach((k) => {
     const slider = document.getElementById(`weight-${k}`);
@@ -1265,17 +1271,32 @@ function resetWeights() {
   renderRanking(currentWeights);
 }
 
-// ---- localStorage ----
+// ---- localStorage + URL パラメータ ----
 function loadWeights() {
   try {
+    // URL パラメータを優先（共有リンクからのアクセスに対応）
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = {};
+    let hasUrl = false;
+    WEIGHT_KEYS.forEach((k) => {
+      const urlKey = WEIGHT_URL_KEYS[k];
+      if (params.has(urlKey)) {
+        const v = parseInt(params.get(urlKey), 10);
+        if (!isNaN(v)) { fromUrl[k] = v; hasUrl = true; }
+      }
+    });
+    if (hasUrl) {
+      const merged = { ...DEFAULT_WEIGHTS };
+      WEIGHT_KEYS.forEach((k) => { if (typeof fromUrl[k] === 'number') merged[k] = fromUrl[k]; });
+      return merged;
+    }
+    // URL になければ localStorage から
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return { ...DEFAULT_WEIGHTS };
     const parsed = JSON.parse(raw);
     // 旧データに新キーがない場合はデフォルト値で補完
     const merged = { ...DEFAULT_WEIGHTS };
-    WEIGHT_KEYS.forEach((k) => {
-      if (typeof parsed[k] === 'number') merged[k] = parsed[k];
-    });
+    WEIGHT_KEYS.forEach((k) => { if (typeof parsed[k] === 'number') merged[k] = parsed[k]; });
     return merged;
   } catch (_) {}
   return { ...DEFAULT_WEIGHTS };
@@ -1284,6 +1305,12 @@ function loadWeights() {
 function saveWeights(w) {
   try {
     localStorage.setItem(LS_KEY, JSON.stringify(w));
+    // URL に重みを反映（リロードで設定が復元・他ユーザーとの共有が可能になる）
+    const params = new URLSearchParams(window.location.search);
+    WEIGHT_KEYS.forEach((k) => {
+      params.set(WEIGHT_URL_KEYS[k], String(w[k] ?? 0));
+    });
+    history.replaceState(null, '', '?' + params.toString());
   } catch (_) {}
 }
 
