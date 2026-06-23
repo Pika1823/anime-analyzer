@@ -231,7 +231,7 @@ def test_calc_pattern1_score_genre_match_increases_score():
         novel_eval_score=0.0,
         anime=anime,
     )
-    assert abs(match_result["score"] - nomatch_result["score"] - 0.25) < 1e-9
+    assert abs(match_result["score"] - nomatch_result["score"] - 25.0) < 1e-6
 
 
 # --- main 統合テスト ---

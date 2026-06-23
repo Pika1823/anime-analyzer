@@ -220,6 +220,9 @@ def main() -> None:
     merged = upsert_novels(existing, new_df).copy()
     # upsert 後に is_anime を anime_ncodes で再付与（update() による劣化を防ぐ）
     merged["is_anime"] = merged["ncode"].isin(anime_ncodes).astype(bool)
+    # 今週のランキングに含まれていない作品の月刊順位をランク外（None）にリセット
+    new_ncodes_set = set(new_df["ncode"])
+    merged.loc[~merged["ncode"].isin(new_ncodes_set), "monthly_rank_latest"] = None
     save_csv(merged, NOVELS_CSV)
     logger.info("novels.csv 更新完了: %d 件", len(merged))
 

@@ -187,7 +187,8 @@ function calcScore(novel, weights) {
       best = { score: s, animeId: entry.anime_id, animeTitle: entry.anime_title };
     }
   }
-  return best;
+  // 0〜100 スケールに変換して返す
+  return { ...best, score: best.score * 100 };
 }
 
 // ---- View 1: 類似度ランキング ----
@@ -279,8 +280,7 @@ function renderRanking(weights) {
 
   tbody.innerHTML = pageItems
     .map((n, i) => {
-      const scorePct = Math.round(n._score * 100);
-      const barWidth = Math.max(2, scorePct);
+      const barWidth = Math.max(2, Math.round(n._score));
       const animeBadge = n.is_anime ? ' <span class="anime-badge">アニメ化済み</span>' : '';
       const extraCell = extraCol ? `<td>${extraCol.fmt(n[sortBy])}</td>` : '';
       const evalCell = n.all_hyoka_cnt_latest != null ? n.all_hyoka_cnt_latest.toLocaleString() + ' 件' : '—';
@@ -294,7 +294,7 @@ function renderRanking(weights) {
         <td>
           <div class="score-bar-wrap">
             <div class="score-bar" style="width:${barWidth}px"></div>
-            <span class="score-text">${(n._score).toFixed(3)}</span>
+            <span class="score-text">${(n._score).toFixed(1)}</span>
           </div>
         </td>
         <td>${escHtml(n._animeTitle || '—')}</td>
@@ -414,7 +414,7 @@ function renderComparison(ncode) {
         <span><strong>評価ポイント:</strong> ${novel.all_point_latest != null ? novel.all_point_latest.toLocaleString() + ' pt' : '—'}</span>
         <span><strong>月間ポイント:</strong> ${novel.monthly_point_latest != null ? novel.monthly_point_latest.toLocaleString() + ' pt' : '—'}</span>
         <span><strong>感想件数:</strong> ${novel.impression_cnt_latest != null ? novel.impression_cnt_latest.toLocaleString() + ' 件' : '—'}</span>
-        <span><strong>スコア:</strong> ${score.toFixed(3)}</span>
+        <span><strong>スコア:</strong> ${score.toFixed(1)}</span>
         <span><strong>最類似アニメ:</strong> ${escHtml(animeTitle || '—')}</span>
         <span><strong>Nコード:</strong> <a class="novel-link" href="${narouUrl}" target="_blank" rel="noopener">${ncode}</a></span>
       </div>
@@ -644,7 +644,7 @@ function renderTopAnimeChart(novel) {
   const top5 = [...novel.pattern1_scores]
     .map((e) => ({
       title: e.anime_title,
-      score: totalWeight > 0 ? calcEntryScore(e, currentWeights) / totalWeight : 0,
+      score: totalWeight > 0 ? calcEntryScore(e, currentWeights) / totalWeight * 100 : 0,
     }))
     .sort((a, b) => b.score - a.score)
     .slice(0, 5);
@@ -655,7 +655,7 @@ function renderTopAnimeChart(novel) {
       labels: top5.map((e) => e.title),
       datasets: [{
         label: '類似度スコア',
-        data: top5.map((e) => parseFloat(e.score.toFixed(3))),
+        data: top5.map((e) => parseFloat(e.score.toFixed(1))),
         backgroundColor: '#e9456099',
         borderColor: '#e94560',
         borderWidth: 1,
@@ -666,10 +666,10 @@ function renderTopAnimeChart(novel) {
       indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
-      scales: { x: { min: 0, max: 1, ticks: { stepSize: 0.2 } } },
+      scales: { x: { min: 0, max: 100, ticks: { stepSize: 20 } } },
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: (c) => ` スコア: ${c.parsed.x.toFixed(3)}` } },
+        tooltip: { callbacks: { label: (c) => ` スコア: ${c.parsed.x.toFixed(1)}` } },
       },
     },
   });
@@ -1027,7 +1027,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const scoreSlider = document.getElementById('filter-score');
   const scoreLabel = document.getElementById('filter-score-label');
   scoreSlider.addEventListener('input', () => {
-    scoreLabel.textContent = `スコア閾値: ${parseFloat(scoreSlider.value).toFixed(2)} 以上`;
+    scoreLabel.textContent = `スコア閾値: ${parseFloat(scoreSlider.value).toFixed(1)} 以上`;
     currentPage = 0;
     renderRanking(currentWeights);
   });

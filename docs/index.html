@@ -38,7 +38,7 @@
           行をクリックすると詳細スコアを確認できます。
         </p>
         <div class="score-explain">
-          <div class="score-explain-title">スコアの計算方法 <span class="score-range">（0.00 〜 1.00、1.00 が最も似ている）</span></div>
+          <div class="score-explain-title">スコアの計算方法 <span class="score-range">（0.0 〜 100.0、100.0 が最も似ている）</span></div>
           <div class="score-factors" id="score-factors"></div>
           <p class="info-note">⚙ 設定タブで各項目の重みを自由に変更できます</p>
         </div>
@@ -71,11 +71,11 @@
           type="range"
           id="filter-score"
           min="0"
-          max="1"
-          step="0.01"
+          max="100"
+          step="1"
           value="0"
         />
-        <span id="filter-score-label" class="range-label">スコア閾値: 0.00 以上</span>
+        <span id="filter-score-label" class="range-label">スコア閾値: 0.0 以上</span>
       </label>
       <label class="filter-check">
         <input type="checkbox" id="filter-top10" />

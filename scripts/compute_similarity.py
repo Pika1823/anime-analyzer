@@ -88,7 +88,7 @@ def calc_tag_jaccard(tags_a: str, tags_b: str) -> float:
 
 
 def calc_rank_score(monthly_rank: int | float | None) -> float:
-    """月刊ランクからスコアを計算する。"""
+    """月刊ランクからスコアを計算する。1001以上（ランク外）は 0.0 を返す。"""
     if monthly_rank is None or (isinstance(monthly_rank, float) and math.isnan(monthly_rank)):
         return 0.0
     rank = int(monthly_rank)
@@ -96,7 +96,9 @@ def calc_rank_score(monthly_rank: int | float | None) -> float:
         return 1.0
     if rank <= 300:
         return 0.6
-    return 0.3
+    if rank <= 1000:
+        return 0.3
+    return 0.0  # 1001以上はランク外
 
 
 def calc_bm_view_score(bookmark: int | float, cumulative_view: int | float | None) -> float:
@@ -151,11 +153,15 @@ def calc_activity_score(general_lastup: str | None) -> float:
 
 
 def calc_best_rank_ever(ncode: str, snapshots: pd.DataFrame) -> int | None:
-    """スナップショット全体での最高月間ランクを返す（値が小さいほど良い順位）。"""
+    """スナップショット全体での最高月間ランクを返す（値が小さいほど良い順位）。
+    1001以上（ランク外マーカー）は除外して計算する。
+    """
     if snapshots.empty or "ncode" not in snapshots.columns:
         return None
     rows = snapshots[
-        (snapshots["ncode"] == ncode) & snapshots["monthly_rank"].notna()
+        (snapshots["ncode"] == ncode)
+        & snapshots["monthly_rank"].notna()
+        & (snapshots["monthly_rank"] < 1001)
     ]
     if rows.empty:
         return None
@@ -250,7 +256,7 @@ def calc_pattern1_score(
     return {
         "anime_id":            anime.get("anime_id", ""),
         "anime_title":         anime.get("anime_title", ""),
-        "score":               round(score, 4),
+        "score":               round(score * 100, 2),  # 0.0〜100.0 スケール
         "genre_score":         round(genre_score, 4),
         "tag_score":           round(tag_score, 4),
         "rank_score":          round(rank_score, 4),

@@ -115,13 +115,17 @@ def main() -> None:
 
         daily_view = calc_daily_view(ncode, cumulative_view, snapshots, today)
 
+        # monthly_rank_latest が None/NaN の場合はランク外として 1001 を記録する
+        _rank = row.get("monthly_rank_latest")
+        monthly_rank_for_snap = 1001 if pd.isna(_rank) else int(float(_rank))
+
         new_rows.append({
             "date": today_str,
             "ncode": ncode,
             "cumulative_view": cumulative_view,
             "daily_view": daily_view,
             "bookmark_count": detail.get("bookmarkcount", 0),
-            "monthly_rank": row.get("monthly_rank_latest"),
+            "monthly_rank": monthly_rank_for_snap,
             "weekly_rank": None,
             "weekly_unique": detail.get("weekly_unique"),
             "all_point": detail.get("all_point"),
