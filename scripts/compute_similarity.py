@@ -21,6 +21,7 @@ from utils import (
     ANNICT_WORKS_CSV,
     DAILY_SNAPSHOTS_CSV,
     DOCS_DATA_DIR,
+    NORM_PARAMS_JSON,
     NOVELS_CSV,
     TRENDS_CACHE_CSV,
     get_logger,
@@ -118,21 +119,65 @@ def calc_bm_view_score(bookmark: int | float, cumulative_view: int | float | Non
     return min(1.0, ratio / 0.05)
 
 
-EVAL_SCORE_MAX_CNT: float = 30000.0   # 評価件数スコアの満点閾値
-MONTHLY_POINT_MAX: float = 10000.0   # 月間ポイントスコアの満点閾値（要チューニング）
+# デフォルト正規化パラメータ（norm_params.json が存在しない場合のフォールバック）
+DEFAULT_NORM_PARAMS: dict[str, dict[str, float]] = {
+    "all_hyoka_cnt_latest":  {"min": 0.0, "max": 30000.0},
+    "all_point_latest":      {"min": 0.0, "max": 300000.0},
+    "monthly_point_latest":  {"min": 0.0, "max": 10000.0},
+    "impression_cnt_latest": {"min": 0.0, "max": 500.0},
+}
+
+
+def calc_norm_score(value: int | float | None, min_val: float, max_val: float) -> float:
+    """min-max 正規化でスコアを 0.0〜1.0 の範囲で計算する。
+
+    データセット全体の最小/最大を基準に正規化する。
+    max_val <= min_val の場合（全作品が同じ値）は 0.0 を返す。
+    """
+    if value is None or (isinstance(value, float) and math.isnan(value)):
+        return 0.0
+    if max_val <= min_val:
+        return 0.0
+    return min(1.0, max(0.0, (float(value) - min_val) / (max_val - min_val)))
+
+
+def load_norm_params() -> dict[str, dict[str, float]]:
+    """NORM_PARAMS_JSON を読み込む。ファイルが存在しない場合はデフォルト値を返す。
+
+    Returns:
+        {列名: {min: float, max: float}} 形式の正規化パラメータ辞書
+    """
+    if not NORM_PARAMS_JSON.exists():
+        logger.info("norm_params.json が存在しません。デフォルトの正規化パラメータを使用します。")
+        return dict(DEFAULT_NORM_PARAMS)
+    try:
+        data = json.loads(NORM_PARAMS_JSON.read_text(encoding="utf-8"))
+        params = data.get("params", {})
+        # 欠損キーはデフォルト値で補完
+        result: dict[str, dict[str, float]] = dict(DEFAULT_NORM_PARAMS)
+        for key, val in params.items():
+            if isinstance(val, dict) and "min" in val and "max" in val:
+                result[key] = {"min": float(val["min"]), "max": float(val["max"])}
+        logger.info(
+            "norm_params.json 読み込み完了（計算日: %s）",
+            data.get("computed_at", "不明"),
+        )
+        return result
+    except (json.JSONDecodeError, KeyError, ValueError) as e:
+        logger.warning("norm_params.json の読み込み失敗: %s。デフォルト値を使用します。", e)
+        return dict(DEFAULT_NORM_PARAMS)
+
 
 def calc_eval_score(all_hyoka_cnt: int | float | None) -> float:
-    """評価件数スコアを計算する（30000件で満点）。"""
-    if all_hyoka_cnt is None or (isinstance(all_hyoka_cnt, float) and math.isnan(all_hyoka_cnt)):
-        return 0.0
-    return min(1.0, float(all_hyoka_cnt) / EVAL_SCORE_MAX_CNT)
+    """評価件数スコアを計算する（デフォルト正規化パラメータ使用）。後方互換ラッパー。"""
+    p = DEFAULT_NORM_PARAMS["all_hyoka_cnt_latest"]
+    return calc_norm_score(all_hyoka_cnt, p["min"], p["max"])
 
 
 def calc_monthly_point_score(monthly_point: int | float | None) -> float:
-    """月間ポイントスコアを計算する（MONTHLY_POINT_MAX で満点）。"""
-    if monthly_point is None or (isinstance(monthly_point, float) and math.isnan(monthly_point)):
-        return 0.0
-    return min(1.0, float(monthly_point) / MONTHLY_POINT_MAX)
+    """月間ポイントスコアを計算する（デフォルト正規化パラメータ使用）。後方互換ラッパー。"""
+    p = DEFAULT_NORM_PARAMS["monthly_point_latest"]
+    return calc_norm_score(monthly_point, p["min"], p["max"])
 
 
 def calc_activity_score(general_lastup: str | None) -> float:
@@ -343,6 +388,9 @@ def main() -> None:
     """メイン処理: CSV を読み込み、類似度スコアを計算し、JSON ファイルを出力する。"""
     logger.info("compute_similarity.py 開始")
 
+    # 正規化パラメータ読み込み（月曜日の fetch_narou.py 実行時に更新される）
+    norm_params = load_norm_params()
+
     # CSV 読み込み
     novels_df = load_csv(NOVELS_CSV)
     anime_df = load_csv(ANIME_WORKS_CSV)
@@ -423,14 +471,22 @@ def main() -> None:
                 except (ValueError, TypeError):
                     pass
         all_hyoka_cnt_val = all_hyoka_cnt_from_snap if all_hyoka_cnt_from_snap is not None else _nan_to_none(novel.get("all_hyoka_cnt_latest"))
-        eval_score = calc_eval_score(all_hyoka_cnt_val)
+        eval_score = calc_norm_score(
+            all_hyoka_cnt_val,
+            norm_params["all_hyoka_cnt_latest"]["min"],
+            norm_params["all_hyoka_cnt_latest"]["max"],
+        )
 
         # 過去最高ランク（スナップショットから）
         best_rank_ever = calc_best_rank_ever(ncode, snapshots_df)
 
         # 月間ポイント・活性スコアを計算
         monthly_point_val = _nan_to_none(novel.get("monthly_point_latest"))
-        monthly_point_score = calc_monthly_point_score(monthly_point_val)
+        monthly_point_score = calc_norm_score(
+            monthly_point_val,
+            norm_params["monthly_point_latest"]["min"],
+            norm_params["monthly_point_latest"]["max"],
+        )
         general_lastup_val = novel.get("general_lastup", "")
         if isinstance(general_lastup_val, float) and math.isnan(general_lastup_val):
             general_lastup_val = ""

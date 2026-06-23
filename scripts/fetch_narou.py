@@ -2,6 +2,7 @@
 なろうAPI から月刊ランキング TOP1000 を取得して novels.csv を upsert する。
 週次実行（月曜のみ）。
 """
+import json
 import os
 import time
 from datetime import date, datetime
@@ -13,6 +14,7 @@ import requests
 from utils import (
     ANIME_WORKS_CSV,
     NAROU_API_URL,
+    NORM_PARAMS_JSON,
     NOVELS_CSV,
     get_logger,
     is_weekly_run_day,
@@ -37,6 +39,14 @@ NAROU_NOVEL_TYPE: str = os.environ.get("NAROU_NOVEL_TYPE", "")
 
 # anime_works.csv の ncode 未設定エントリに対してタイトルマッチで ncode を特定する際の類似度閾値
 ANIME_TITLE_MATCH_THRESHOLD = 0.7
+
+# 正規化パラメータ（min/max）を計算する novels.csv の列名一覧
+NORM_METRICS: list[str] = [
+    "all_hyoka_cnt_latest",
+    "all_point_latest",
+    "monthly_point_latest",
+    "impression_cnt_latest",
+]
 
 
 def fetch_monthly_top(limit: int = NAROU_MAX_COUNT) -> list[dict]:
@@ -114,6 +124,41 @@ def _unix_to_iso(ts) -> str:
         return datetime.fromtimestamp(int(ts)).isoformat()
     except (ValueError, OSError):
         return ""
+
+
+def compute_and_save_norm_params(novels_df: pd.DataFrame) -> None:
+    """novels.csv の各指標の min/max を計算して norm_params.json に保存する。
+
+    compute_similarity.py がこのファイルを読み込み、データセット全体に対する
+    min-max 正規化スコアを算出するために使用する。
+
+    Args:
+        novels_df: novels.csv の DataFrame
+    """
+    logger.info("正規化パラメータの計算開始")
+    params: dict[str, dict[str, float]] = {}
+    for col in NORM_METRICS:
+        if col not in novels_df.columns:
+            params[col] = {"min": 0.0, "max": 1.0}
+            logger.warning("正規化対象列が見つかりません（フォールバック使用）: %s", col)
+            continue
+        valid = pd.to_numeric(novels_df[col], errors="coerce").dropna()
+        if valid.empty:
+            params[col] = {"min": 0.0, "max": 1.0}
+            continue
+        min_val = float(valid.min())
+        max_val = float(valid.max())
+        # min == max の場合はゼロ除算を防ぐため max を +1.0 する
+        params[col] = {"min": min_val, "max": max_val if max_val > min_val else min_val + 1.0}
+        logger.info("  %s: min=%.1f, max=%.1f", col, min_val, max_val)
+
+    result = {
+        "computed_at": date.today().isoformat(),
+        "params": params,
+    }
+    NORM_PARAMS_JSON.parent.mkdir(parents=True, exist_ok=True)
+    NORM_PARAMS_JSON.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+    logger.info("norm_params.json 保存完了: %s", NORM_PARAMS_JSON)
 
 
 def find_anime_ncodes_by_title(anime_works: pd.DataFrame, novels_df: pd.DataFrame) -> set[str]:
@@ -283,6 +328,9 @@ def main() -> None:
     merged.loc[~merged["ncode"].isin(new_ncodes_set), "monthly_rank_latest"] = None
     save_csv(merged, NOVELS_CSV)
     logger.info("novels.csv 更新完了: %d 件", len(merged))
+
+    # 正規化パラメータを計算・保存（compute_similarity.py が参照する）
+    compute_and_save_norm_params(merged)
 
 
 if __name__ == "__main__":

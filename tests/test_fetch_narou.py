@@ -7,7 +7,13 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 
-from fetch_narou import build_novels_df, fetch_monthly_top, find_anime_ncodes_by_title, upsert_novels
+from fetch_narou import (
+    build_novels_df,
+    compute_and_save_norm_params,
+    fetch_monthly_top,
+    find_anime_ncodes_by_title,
+    upsert_novels,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -272,6 +278,42 @@ def test_fetch_monthly_top_handles_json_decode_error(monkeypatch):
 # main（monkeypatch による統合テスト）
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# compute_and_save_norm_params
+# ---------------------------------------------------------------------------
+
+def test_compute_and_save_norm_params_creates_file(tmp_path, monkeypatch):
+    """novels.csv から min/max を計算し norm_params.json を生成することを確認する。"""
+    import fetch_narou
+    monkeypatch.setattr(fetch_narou, "NORM_PARAMS_JSON", tmp_path / "norm_params.json")
+    df = pd.DataFrame([
+        {"all_hyoka_cnt_latest": 100, "all_point_latest": 1000, "monthly_point_latest": 50, "impression_cnt_latest": 0},
+        {"all_hyoka_cnt_latest": 500, "all_point_latest": 5000, "monthly_point_latest": 200, "impression_cnt_latest": 10},
+        {"all_hyoka_cnt_latest": 300, "all_point_latest": 3000, "monthly_point_latest": 120, "impression_cnt_latest": 5},
+    ])
+    compute_and_save_norm_params(df)
+    import json
+    result = json.loads((tmp_path / "norm_params.json").read_text(encoding="utf-8"))
+    assert "computed_at" in result
+    assert result["params"]["all_hyoka_cnt_latest"]["min"] == 100.0
+    assert result["params"]["all_hyoka_cnt_latest"]["max"] == 500.0
+    assert result["params"]["monthly_point_latest"]["min"] == 50.0
+    assert result["params"]["monthly_point_latest"]["max"] == 200.0
+
+
+def test_compute_and_save_norm_params_missing_column(tmp_path, monkeypatch):
+    """対象列が存在しない場合はフォールバック値（0.0/1.0）を保存する。"""
+    import fetch_narou
+    monkeypatch.setattr(fetch_narou, "NORM_PARAMS_JSON", tmp_path / "norm_params.json")
+    df = pd.DataFrame([{"ncode": "N001"}])  # 正規化対象列なし
+    compute_and_save_norm_params(df)
+    import json
+    result = json.loads((tmp_path / "norm_params.json").read_text(encoding="utf-8"))
+    # フォールバック値が保存されていること
+    assert result["params"]["all_hyoka_cnt_latest"]["min"] == 0.0
+    assert result["params"]["all_hyoka_cnt_latest"]["max"] == 1.0
+
+
 def test_main_reapplies_is_anime_after_upsert(tmp_path, monkeypatch):
     """upsert 後に is_anime フラグが anime_ncodes で再付与されることを確認する。"""
     import fetch_narou
@@ -292,6 +334,7 @@ def test_main_reapplies_is_anime_after_upsert(tmp_path, monkeypatch):
     ))
     saved = {}
     monkeypatch.setattr(fetch_narou, "save_csv", lambda df, path: saved.update({"df": df}))
+    monkeypatch.setattr(fetch_narou, "compute_and_save_norm_params", lambda df: None)
     monkeypatch.setattr(fetch_narou, "is_weekly_run_day", lambda: True)
     monkeypatch.setattr(fetch_narou, "fetch_monthly_top", lambda: raw_data[1:])
     fetch_narou.main()

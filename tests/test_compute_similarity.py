@@ -15,16 +15,19 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from compute_similarity import (
+    DEFAULT_NORM_PARAMS,
     calc_activity_score,
     calc_bm_view_score,
     calc_best_rank_ever,
     calc_eval_score,
     calc_growth_metrics,
     calc_monthly_point_score,
+    calc_norm_score,
     calc_pattern1_score,
     calc_rank_score,
     calc_tag_jaccard,
     get_genre_label,
+    load_norm_params,
 )
 
 
@@ -78,6 +81,69 @@ def test_calc_rank_score_lower_tier():
 def test_calc_rank_score_none():
     """ランク None は 0.0 を返す。"""
     assert calc_rank_score(None) == 0.0
+
+
+# --- calc_norm_score ---
+
+def test_calc_norm_score_min():
+    """最小値は 0.0 を返す。"""
+    assert calc_norm_score(0, 0.0, 100.0) == 0.0
+
+
+def test_calc_norm_score_max():
+    """最大値は 1.0 を返す。"""
+    assert calc_norm_score(100, 0.0, 100.0) == 1.0
+
+
+def test_calc_norm_score_mid():
+    """中間値は正しく正規化される。"""
+    assert calc_norm_score(50, 0.0, 100.0) == 0.5
+
+
+def test_calc_norm_score_above_max():
+    """最大値を超えても 1.0 にクランプされる。"""
+    assert calc_norm_score(200, 0.0, 100.0) == 1.0
+
+
+def test_calc_norm_score_none():
+    """None は 0.0 を返す。"""
+    assert calc_norm_score(None, 0.0, 100.0) == 0.0
+
+
+def test_calc_norm_score_zero_range():
+    """min == max のとき 0.0 を返す（ゼロ除算回避）。"""
+    assert calc_norm_score(50, 50.0, 50.0) == 0.0
+
+
+def test_calc_norm_score_nonzero_min():
+    """min が 0 でないケースでも正しく正規化される。"""
+    result = calc_norm_score(150, 100.0, 200.0)
+    assert abs(result - 0.5) < 1e-9
+
+
+# --- load_norm_params ---
+
+def test_load_norm_params_returns_default_when_missing(tmp_path, monkeypatch):
+    """norm_params.json がない場合はデフォルト値を返す。"""
+    import compute_similarity
+    monkeypatch.setattr(compute_similarity, "NORM_PARAMS_JSON", tmp_path / "norm_params.json")
+    result = load_norm_params()
+    assert result["all_hyoka_cnt_latest"]["max"] == DEFAULT_NORM_PARAMS["all_hyoka_cnt_latest"]["max"]
+
+
+def test_load_norm_params_reads_file(tmp_path, monkeypatch):
+    """norm_params.json が存在する場合はその値を使用する。"""
+    import compute_similarity
+    norm_path = tmp_path / "norm_params.json"
+    norm_path.write_text(
+        '{"computed_at": "2026-06-23", "params": {"all_hyoka_cnt_latest": {"min": 0.0, "max": 35920.0}}}',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(compute_similarity, "NORM_PARAMS_JSON", norm_path)
+    result = load_norm_params()
+    assert result["all_hyoka_cnt_latest"]["max"] == 35920.0
+    # 欠損キーはデフォルト値で補完される
+    assert "monthly_point_latest" in result
 
 
 # --- calc_eval_score ---
