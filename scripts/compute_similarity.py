@@ -638,12 +638,14 @@ def main() -> None:
                 continue
             hyoka_val = _nan_to_none(row.get("all_hyoka_cnt"))
             all_point_snap = _nan_to_none(row.get("all_point"))
+            gp_val = _nan_to_none(row.get("global_point"))
             snapshots_by_ncode.setdefault(ncode_val, []).append({
                 "date": date_val,
                 "monthly_rank": int(rank_val) if rank_val is not None else None,
                 "bookmark_count": int(bm_val) if bm_val is not None else None,
                 "all_hyoka_cnt": int(float(hyoka_val)) if hyoka_val is not None else None,
                 "all_point": int(float(all_point_snap)) if all_point_snap is not None else None,
+                "global_point": int(float(gp_val)) if gp_val is not None else None,
             })
 
     snapshots_merged = {

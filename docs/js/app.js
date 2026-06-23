@@ -5,7 +5,7 @@ let novelsData = null;
 let trendsData = null;
 let snapshotsData = null;
 let selectedNcode = null;
-let currentWeights = { genre: 0, tag: 0, rank: 34, bmView: 33, growth: 0, eval: 33, monthlyPoint: 0, activity: 0 };
+let currentWeights = { genre: 22, tag: 18, rank: 17, bmView: 13, growth: 8, eval: 7, monthlyPoint: 10, activity: 5 };
 
 // ページネーション
 let currentPage = 0;
@@ -21,7 +21,7 @@ const GRAPHS_LS_KEY = 'animeTool.graphs';
 // 並び替え列の定義（score / monthly_rank_latest / all_hyoka_cnt_latest は常時表示列のため追加不要）
 const SORT_EXTRA_COL = {
   all_point_latest:       { label: '評価ポイント',     fmt: (v) => v != null ? v.toLocaleString() + ' pt'  : '—' },
-  cumulative_view_latest: { label: '総合評価（代替）', fmt: (v) => v != null ? v.toLocaleString()           : '—' },
+  global_point_latest:    { label: '総合評価ポイント',  fmt: (v) => v != null ? v.toLocaleString()           : '—' },
   monthly_point_latest:   { label: '月間ポイント',     fmt: (v) => v != null ? v.toLocaleString() + ' pt'  : '—' },
   impression_cnt_latest:  { label: '感想件数',         fmt: (v) => v != null ? v.toLocaleString() + ' 件'  : '—' },
   best_rank_ever:         { label: '歴代最高順位',     fmt: (v) => v != null ? v + ' 位'                   : '—' },
@@ -39,11 +39,17 @@ const GRAPH_CONFIGS = [
   },
   {
     id: 'eval_trend',
-    label: '評価件数推移',
-    chartTitle: '累計評価件数推移',
+    label: '評価推移',
+    chartTitle: '評価推移',
     canvasId: 'eval-trend-chart',
     defaultOn: true,
-    hint: '読者の能動的な評価行動の蓄積を表します。評価件数が急増している作品は口コミが広がっているサインです。',
+    hint: '読者の能動的な評価行動の蓄積を表します。「日次増分」に切り替えると日々の伸びが確認できます。急増しているタイミングを口コミ拡散のサインとして捉えられます。',
+    controls: `<div class="graph-controls">
+      <button class="eval-ctrl-btn active" data-ctrl="metric" data-val="hyoka">評価件数</button>
+      <button class="eval-ctrl-btn" data-ctrl="metric" data-val="point">評価ポイント</button>
+      <button class="eval-ctrl-btn active" data-ctrl="mode" data-val="cumulative">累計</button>
+      <button class="eval-ctrl-btn" data-ctrl="mode" data-val="delta">日次増分</button>
+    </div>`,
   },
   {
     id: 'score_breakdown',
@@ -67,7 +73,7 @@ const GRAPH_CONFIGS = [
     chartTitle: 'スコアレーダーチャート（最類似アニメとの比較）',
     canvasId: 'radar-chart',
     defaultOn: false,
-    hint: '6指標のバランスを直感的に把握できます。面積が大きいほど総合的に強い作品です。偏りが少ない六角形に近い形がアニメ化しやすいプロファイルです。',
+    hint: '8指標のバランスを直感的に把握できます。面積が大きいほど総合的に強い作品です。偏りが少ない形がアニメ化しやすいプロファイルです。',
   },
   {
     id: 'benchmark',
@@ -78,6 +84,12 @@ const GRAPH_CONFIGS = [
     hint: '現在の評価件数・ブックマーク数・月刊順位が全ランキング作品の中で上位何%にいるかを示します。100%に近いほど上位です。',
   },
 ];
+
+// 評価グラフ状態
+let evalDisplayMode = 'cumulative'; // 'cumulative' | 'delta'
+let evalMetric = 'hyoka';           // 'hyoka' | 'point'
+let currentEvalHistory = [];
+let currentEvalNovelTitle = '';
 
 // Chart.js インスタンス（再描画時に破棄する）
 let comparisonChart = null;
@@ -116,7 +128,7 @@ const CORR_AXIS_OPTIONS = [
   { key: 'growth_all_point_30d_rate',      label: '評価ポイント 30日増加率(%)' },
 ];
 
-const DEFAULT_WEIGHTS = { genre: 0, tag: 0, rank: 34, bmView: 33, growth: 0, eval: 33, monthlyPoint: 0, activity: 0 };
+const DEFAULT_WEIGHTS = { genre: 22, tag: 18, rank: 17, bmView: 13, growth: 8, eval: 7, monthlyPoint: 10, activity: 5 };
 const LS_KEY = 'animeTool.weights';
 
 // ---- データ読み込み ----
@@ -409,7 +421,6 @@ function renderComparison(ncode) {
   const bestEntry = novel.pattern1_scores?.find((e) => e.anime_id === animeId) || null;
 
   const rankHistory = snapshotsData?.snapshots?.[ncode] || [];
-  const evalHistory = rankHistory.filter((d) => d.all_hyoka_cnt != null && d.all_hyoka_cnt > 0);
 
   const animeBadge = novel.is_anime ? ' <span class="anime-badge">アニメ化済み</span>' : '';
   const narouUrl = `https://ncode.syosetu.com/${ncode.toLowerCase()}/`;
@@ -423,12 +434,68 @@ function renderComparison(ncode) {
   // グラフセクション（カードごとに個別表示）
   const graphSections = GRAPH_CONFIGS.map((g) => {
     const isVisible = visibleGraphs.has(g.id);
+    const controlsHtml = g.controls ? g.controls : '';
     return `<div class="card graph-section${isVisible ? '' : ' hidden'}" id="graph-section-${g.id}">
       <h4 class="chart-title">${g.chartTitle}</h4>
+      ${controlsHtml}
       <div class="chart-container"><canvas id="${g.canvasId}"></canvas></div>
       <p class="graph-hint">💡 ${g.hint}</p>
     </div>`;
   }).join('');
+
+  // 伸び指標テーブル生成
+  const gm = novel.growth_metrics || null;
+  const growthPeriodDefs = [
+    { key: '1d',  label: '1日前' },
+    { key: '7d',  label: '1週間前' },
+    { key: '30d', label: '1ヶ月前' },
+  ];
+  const fmtDelta = (v, unit) => {
+    if (v == null) return '<td>—</td>';
+    const sign = v >= 0 ? '+' : '';
+    return `<td class="${v >= 0 ? 'positive' : 'negative'}">${sign}${v.toLocaleString()} ${unit}</td>`;
+  };
+  const fmtRate = (r) => {
+    if (r == null) return '';
+    const sign = r >= 0 ? '+' : '';
+    return ` <span style="color:#888;font-size:0.8em;">(${sign}${r.toFixed(2)}%)</span>`;
+  };
+
+  let growthTableHtml = '';
+  if (gm) {
+    const rows = growthPeriodDefs.map(({ key, label }) => {
+      const h = gm.all_hyoka_cnt?.[key];
+      const p = gm.all_point?.[key];
+      const hCell = h ? `<td class="${(h.delta ?? 0) >= 0 ? 'positive' : 'negative'}">${h.delta != null ? (h.delta >= 0 ? '+' : '') + h.delta.toLocaleString() + ' 件' : '—'}${fmtRate(h.rate)}</td>` : '<td>—</td>';
+      const pCell = p ? `<td class="${(p.delta ?? 0) >= 0 ? 'positive' : 'negative'}">${p.delta != null ? (p.delta >= 0 ? '+' : '') + p.delta.toLocaleString() + ' pt' : '—'}${fmtRate(p.rate)}</td>` : '<td>—</td>';
+      return `<tr><td>${label}</td>${hCell}${pCell}</tr>`;
+    }).join('');
+    growthTableHtml = `
+      <div class="detail-section">
+        <h4 class="detail-section-title">伸び指標</h4>
+        <table class="growth-table">
+          <thead><tr><th></th><th>評価件数</th><th>評価ポイント</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  // Annict情報（アニメ化済み作品のみ）
+  let annictHtml = '';
+  if (novel.is_anime && (novel.annict_watchers_count != null || novel.annict_satisfaction_rate != null)) {
+    annictHtml = `
+      <div class="detail-section">
+        <h4 class="detail-section-title">Annict情報</h4>
+        <div class="meta-row">
+          ${novel.annict_watchers_count != null ? `<span><strong>視聴者数:</strong> ${novel.annict_watchers_count.toLocaleString()}人</span>` : ''}
+          ${novel.annict_satisfaction_rate != null ? `<span><strong>満足度:</strong> ${novel.annict_satisfaction_rate.toFixed(1)}%</span>` : ''}
+          ${novel.annict_reviews_count != null ? `<span><strong>レビュー件数:</strong> ${novel.annict_reviews_count}件</span>` : ''}
+        </div>
+      </div>`;
+  }
+
+  // global_point_latest: 旧カラム名との互換
+  const gpLatest = novel.global_point_latest ?? novel.cumulative_view_latest;
 
   container.innerHTML = `
     <div class="back-bar">
@@ -438,19 +505,51 @@ function renderComparison(ncode) {
       <h3>
         <a class="novel-link" href="${narouUrl}" target="_blank" rel="noopener">${escHtml(novel.title)}</a>${animeBadge}
       </h3>
-      <div class="meta-row">
-        <span><strong>著者:</strong> ${escHtml(novel.author || '—')}</span>
-        <span><strong>ジャンル:</strong> ${escHtml(novel.genre_label || '—')}</span>
-        <span><strong>月刊順位:</strong> ${novel.monthly_rank_latest ?? '—'}</span>
-        <span><strong>歴代最高順位:</strong> ${novel.best_rank_ever ?? '—'}</span>
-        <span><strong>評価件数:</strong> ${novel.all_hyoka_cnt_latest != null ? novel.all_hyoka_cnt_latest.toLocaleString() + ' 件' : '—'}</span>
-        <span><strong>評価ポイント:</strong> ${novel.all_point_latest != null ? novel.all_point_latest.toLocaleString() + ' pt' : '—'}</span>
-        <span><strong>月間ポイント:</strong> ${novel.monthly_point_latest != null ? novel.monthly_point_latest.toLocaleString() + ' pt' : '—'}</span>
-        <span><strong>感想件数:</strong> ${novel.impression_cnt_latest != null ? novel.impression_cnt_latest.toLocaleString() + ' 件' : '—'}</span>
-        <span><strong>スコア:</strong> ${score.toFixed(1)}</span>
-        <span><strong>最類似アニメ:</strong> ${escHtml(animeTitle || '—')}</span>
-        <span><strong>Nコード:</strong> <a class="novel-link" href="${narouUrl}" target="_blank" rel="noopener">${ncode}</a></span>
+
+      <div class="detail-section">
+        <div class="meta-row">
+          <span><strong>著者:</strong> ${escHtml(novel.author || '—')}</span>
+          <span><strong>ジャンル:</strong> ${escHtml(novel.genre_label || '—')}</span>
+          <span><strong>話数:</strong> ${novel.episode_count_latest != null ? novel.episode_count_latest + '話' : '—'}</span>
+          <span><strong>文字数:</strong> ${novel.length != null ? novel.length.toLocaleString() + '字' : '—'}</span>
+          <span><strong>完結:</strong> ${novel.is_completed != null ? (novel.is_completed ? '完結済み' : '連載中') : '—'}</span>
+          <span><strong>転生要素:</strong> ${novel.is_isekai_tensei != null ? (novel.is_isekai_tensei ? 'あり' : 'なし') : '—'}</span>
+          <span><strong>転移要素:</strong> ${novel.is_isekai_tenni != null ? (novel.is_isekai_tenni ? 'あり' : 'なし') : '—'}</span>
+          <span><strong>最終更新:</strong> ${novel.general_lastup ? novel.general_lastup.slice(0, 10) : '—'}</span>
+        </div>
       </div>
+
+      <div class="detail-section">
+        <h4 class="detail-section-title">評価指標</h4>
+        <div class="meta-row">
+          <span><strong>評価件数:</strong> ${novel.all_hyoka_cnt_latest != null ? novel.all_hyoka_cnt_latest.toLocaleString() + ' 件' : '—'}</span>
+          <span><strong>累計評価ポイント:</strong> ${novel.all_point_latest != null ? novel.all_point_latest.toLocaleString() + ' pt' : '—'}</span>
+          <span><strong>総合評価ポイント:</strong> ${gpLatest != null ? gpLatest.toLocaleString() : '—'}</span>
+          <span><strong>月間ポイント:</strong> ${novel.monthly_point_latest != null ? novel.monthly_point_latest.toLocaleString() + ' pt' : '—'}</span>
+          <span><strong>週間ポイント:</strong> ${novel.weekly_point_latest != null ? novel.weekly_point_latest.toLocaleString() + ' pt' : '—'}</span>
+          <span><strong>日間ポイント:</strong> ${novel.daily_point_latest != null ? novel.daily_point_latest.toLocaleString() + ' pt' : '—'}</span>
+          <span><strong>ブックマーク:</strong> ${novel.bookmark_count_latest != null ? novel.bookmark_count_latest.toLocaleString() : '—'}</span>
+          <span><strong>週間ユニーク:</strong> ${novel.weekly_unique_latest != null ? novel.weekly_unique_latest.toLocaleString() : '—'}</span>
+          <span><strong>感想件数:</strong> ${novel.impression_cnt_latest != null ? novel.impression_cnt_latest.toLocaleString() + ' 件' : '—'}</span>
+          <span><strong>レビュー件数:</strong> ${novel.review_cnt_latest != null ? novel.review_cnt_latest.toLocaleString() + ' 件' : '—'}</span>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h4 class="detail-section-title">順位・ポテンシャル</h4>
+        <div class="meta-row">
+          <span><strong>月刊順位:</strong> ${novel.monthly_rank_latest != null ? novel.monthly_rank_latest + ' 位' : '—'}</span>
+          <span><strong>歴代最高順位:</strong> ${novel.best_rank_ever != null ? novel.best_rank_ever + ' 位' : '—'}</span>
+          <span><strong>BM/評価比率:</strong> ${novel.bm_view_ratio != null ? novel.bm_view_ratio.toFixed(4) : '—'}</span>
+          <span><strong>評価成長率(6ヶ月):</strong> ${novel.view_growth_6mo != null ? (novel.view_growth_6mo * 100).toFixed(1) + '%' : '—'}</span>
+          <span><strong>スコア:</strong> ${score.toFixed(1)}</span>
+          <span><strong>最類似アニメ:</strong> ${escHtml(animeTitle || '—')}</span>
+          <span><strong>Nコード:</strong> <a class="novel-link" href="${narouUrl}" target="_blank" rel="noopener">${ncode}</a></span>
+        </div>
+      </div>
+
+      ${growthTableHtml}
+      ${annictHtml}
       ${novel.story ? `<div class="novel-story">${escHtml(novel.story)}</div>` : ''}
     </div>
 
@@ -461,6 +560,31 @@ function renderComparison(ncode) {
 
     ${graphSections}
   `;
+
+  // eval_trend コントロールボタンのイベント
+  container.querySelectorAll('.eval-ctrl-btn').forEach((btn) => {
+    const ctrl = btn.dataset.ctrl;
+    const val = btn.dataset.val;
+    // 現在の状態に合わせてアクティブ表示を初期化
+    if ((ctrl === 'metric' && val === evalMetric) || (ctrl === 'mode' && val === evalDisplayMode)) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+    btn.addEventListener('click', () => {
+      if (ctrl === 'metric') {
+        evalMetric = val;
+        container.querySelectorAll('[data-ctrl="metric"]').forEach((b) => b.classList.remove('active'));
+      } else {
+        evalDisplayMode = val;
+        container.querySelectorAll('[data-ctrl="mode"]').forEach((b) => b.classList.remove('active'));
+      }
+      btn.classList.add('active');
+      if (visibleGraphs.has('eval_trend') && currentEvalHistory.length > 0) {
+        renderEvalTrend(currentEvalHistory, currentEvalNovelTitle);
+      }
+    });
+  });
 
   // グラフトグルボタンのイベント
   container.querySelectorAll('.graph-toggle-btn').forEach((btn) => {
@@ -474,7 +598,7 @@ function renderComparison(ncode) {
         visibleGraphs.add(gId);
         btn.classList.add('active');
         document.getElementById(`graph-section-${gId}`)?.classList.remove('hidden');
-        renderGraphById(gId, novel, bestEntry, animeTitle, rankHistory, evalHistory);
+        renderGraphById(gId, novel, bestEntry, animeTitle, rankHistory);
       }
       saveVisibleGraphs();
     });
@@ -483,7 +607,7 @@ function renderComparison(ncode) {
   // 表示中のグラフを初期描画
   GRAPH_CONFIGS.forEach((g) => {
     if (visibleGraphs.has(g.id)) {
-      renderGraphById(g.id, novel, bestEntry, animeTitle, rankHistory, evalHistory);
+      renderGraphById(g.id, novel, bestEntry, animeTitle, rankHistory);
     }
   });
 
@@ -493,7 +617,7 @@ function renderComparison(ncode) {
 }
 
 // ---- グラフ個別描画ディスパッチャー ----
-function renderGraphById(graphId, novel, bestEntry, animeTitle, rankHistory, evalHistory) {
+function renderGraphById(graphId, novel, bestEntry, animeTitle, rankHistory) {
   switch (graphId) {
     case 'rank_trend':
       if (rankHistory.length >= 2) {
@@ -505,13 +629,7 @@ function renderGraphById(graphId, novel, bestEntry, animeTitle, rankHistory, eva
       }
       break;
     case 'eval_trend':
-      if (evalHistory.length >= 2) {
-        renderEvalTrend(evalHistory, novel.title);
-      } else {
-        const el = document.getElementById('eval-trend-chart');
-        if (el) el.parentElement.innerHTML =
-          '<p style="color:#888;font-size:0.875rem;">評価件数推移データ蓄積中です。</p>';
-      }
+      renderEvalTrend(rankHistory, novel.title);
       break;
     case 'score_breakdown':
       if (bestEntry) {
@@ -583,23 +701,57 @@ function renderRankingTrend(history, novelTitle) {
 }
 
 function renderEvalTrend(history, novelTitle) {
+  currentEvalHistory = history;
+  currentEvalNovelTitle = novelTitle;
+
   const ctx = document.getElementById('eval-trend-chart');
   if (!ctx) return;
-
   if (evalTrendChart) { evalTrendChart.destroy(); evalTrendChart = null; }
 
-  const sorted = [...history].sort((a, b) => a.date.localeCompare(b.date));
+  const metricKey = evalMetric === 'hyoka' ? 'all_hyoka_cnt' : 'all_point';
+  const metricLabel = evalMetric === 'hyoka' ? '評価件数' : '評価ポイント';
+  const unit = evalMetric === 'hyoka' ? '件' : 'pt';
+  const borderColor = evalMetric === 'hyoka' ? '#f5a623' : '#4fc3f7';
+  const bgColor = evalMetric === 'hyoka' ? 'rgba(245,166,35,0.08)' : 'rgba(79,195,247,0.08)';
+
+  const sorted = [...history]
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .filter((d) => d[metricKey] != null);
+
+  if (sorted.length < 2) {
+    ctx.parentElement.innerHTML = `<p style="color:#888;font-size:0.875rem;">${metricLabel}推移データ蓄積中です（現在 ${sorted.length} 件）。</p>`;
+    return;
+  }
+
+  let labels, data, yLabel, datasetLabel;
+  if (evalDisplayMode === 'cumulative') {
+    labels = sorted.map((d) => d.date);
+    data = sorted.map((d) => d[metricKey]);
+    yLabel = `累計${metricLabel}（${unit}）`;
+    datasetLabel = `累計${metricLabel}: ${novelTitle}`;
+  } else {
+    labels = [];
+    data = [];
+    for (let i = 1; i < sorted.length; i++) {
+      const delta = (sorted[i][metricKey] ?? 0) - (sorted[i - 1][metricKey] ?? 0);
+      labels.push(sorted[i].date);
+      data.push(Math.max(0, delta));
+    }
+    yLabel = `日次増分 ${metricLabel}（${unit}/日）`;
+    datasetLabel = `日次増分${metricLabel}: ${novelTitle}`;
+  }
+
   evalTrendChart = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: sorted.map((d) => d.date),
+      labels,
       datasets: [{
-        label: `累計評価件数: ${novelTitle}`,
-        data: sorted.map((d) => d.all_hyoka_cnt),
-        borderColor: '#f5a623',
-        backgroundColor: 'rgba(245,166,35,0.08)',
-        pointRadius: 4,
-        pointHoverRadius: 6,
+        label: datasetLabel,
+        data,
+        borderColor,
+        backgroundColor: bgColor,
+        pointRadius: 3,
+        pointHoverRadius: 5,
         spanGaps: false,
         tension: 0.2,
       }],
@@ -608,12 +760,12 @@ function renderEvalTrend(history, novelTitle) {
       responsive: true,
       maintainAspectRatio: false,
       scales: {
-        y: { title: { display: true, text: '累計評価件数（件）' }, min: 0 },
+        y: { title: { display: true, text: yLabel }, min: 0 },
         x: { ticks: { maxTicksLimit: 12, maxRotation: 45 } },
       },
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: (c) => ` ${c.parsed.y != null ? c.parsed.y.toLocaleString() + ' 件' : 'データなし'}` } },
+        tooltip: { callbacks: { label: (c) => ` ${c.parsed.y != null ? c.parsed.y.toLocaleString() + ' ' + unit : 'データなし'}` } },
       },
     },
   });
@@ -622,25 +774,29 @@ function renderEvalTrend(history, novelTitle) {
 function renderScoreBreakdown(entry, animeTitle) {
   const ctx = document.getElementById('score-breakdown-chart');
   if (!ctx) return;
-
   if (comparisonChart) { comparisonChart.destroy(); comparisonChart = null; }
+
+  const tw = Object.values(currentWeights).reduce((a, b) => a + b, 0) || 100;
+  const wVals = [
+    currentWeights.genre, currentWeights.tag, currentWeights.rank, currentWeights.bmView,
+    currentWeights.growth, currentWeights.eval, currentWeights.monthlyPoint, currentWeights.activity,
+  ];
+  const baseLabels = ['ジャンル', 'タグ', 'ランク', 'BM/評価比率', '評価成長率', '評価件数', '月間ポイント', '活性スコア'];
+  const rawScores = [
+    entry.genre_score || 0, entry.tag_score || 0, entry.rank_score || 0, entry.bm_view_score || 0,
+    entry.growth_score || 0, entry.eval_score || 0, entry.monthly_point_score || 0, entry.activity_score || 0,
+  ];
+  const labels = baseLabels.map((l, i) => `${l} (${wVals[i]}%)`);
+  // 棒の高さ = 重み付き寄与値（合計 ≈ 総スコア/100）
+  const data = rawScores.map((s, i) => parseFloat((s * wVals[i] / tw).toFixed(4)));
 
   comparisonChart = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: ['ジャンル', 'タグ', 'ランク', 'BM/View比率', 'View成長率', '評価件数', '月間ポイント', '活性スコア'],
+      labels,
       datasets: [{
-        label: `スコア内訳（vs ${animeTitle}）`,
-        data: [
-          entry.genre_score || 0,
-          entry.tag_score || 0,
-          entry.rank_score || 0,
-          entry.bm_view_score || 0,
-          entry.growth_score || 0,
-          entry.eval_score || 0,
-          entry.monthly_point_score || 0,
-          entry.activity_score || 0,
-        ],
+        label: `スコア寄与値（vs ${animeTitle}）`,
+        data,
         backgroundColor: ['#e94560cc','#0f3460cc','#16213ecc','#533483cc','#05c46bcc','#f5a623cc','#4fc3f7cc','#81c784cc'],
         borderRadius: 4,
       }],
@@ -648,10 +804,21 @@ function renderScoreBreakdown(entry, animeTitle) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      scales: { y: { min: 0, max: 1, ticks: { stepSize: 0.2 } } },
+      scales: { y: { min: 0, title: { display: true, text: '寄与値（重み×スコア÷合計重み）' } } },
       plugins: {
         legend: { display: true },
-        tooltip: { callbacks: { label: (c) => ` ${c.parsed.y.toFixed(3)}` } },
+        tooltip: {
+          callbacks: {
+            label: (c) => {
+              const i = c.dataIndex;
+              return [
+                ` 寄与値: ${c.parsed.y.toFixed(4)}`,
+                ` 生スコア: ${rawScores[i].toFixed(3)}`,
+                ` 重み: ${wVals[i]}%`,
+              ];
+            },
+          },
+        },
       },
     },
   });
@@ -718,7 +885,7 @@ function renderRadarChart(entry, animeTitle) {
   radarChart = new Chart(ctx, {
     type: 'radar',
     data: {
-      labels: ['ジャンル', 'タグ', 'ランク', 'BM/View比率', 'View成長率', '評価件数'],
+      labels: ['ジャンル', 'タグ', 'ランク', 'BM/評価比率', '評価成長率', '評価件数', '月間ポイント', '活性スコア'],
       datasets: [{
         label: `vs ${animeTitle}`,
         data: [
@@ -728,6 +895,8 @@ function renderRadarChart(entry, animeTitle) {
           entry.bm_view_score || 0,
           entry.growth_score || 0,
           entry.eval_score || 0,
+          entry.monthly_point_score || 0,
+          entry.activity_score || 0,
         ],
         backgroundColor: 'rgba(233,69,96,0.2)',
         borderColor: '#e94560',
