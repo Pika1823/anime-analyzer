@@ -20,6 +20,7 @@ from narou_config import GENRE_LABEL, PATTERN1_WEIGHTS
 from utils import (
     ANIME_WORKS_CSV,
     ANNICT_WORKS_CSV,
+    BOOK_WORKS_CSV,
     DAILY_SNAPSHOTS_CSV,
     DOCS_DATA_DIR,
     NORM_PARAMS_JSON,
@@ -366,6 +367,7 @@ def main() -> None:
     snapshots_df = load_csv(DAILY_SNAPSHOTS_CSV)
     trends_df = load_csv(TRENDS_CACHE_CSV)
     annict_df = load_csv(ANNICT_WORKS_CSV, dtype={"ncode": str})
+    book_df = load_csv(BOOK_WORKS_CSV, dtype={"ncode": str})
 
     # Annict データを ncode でインデックス化（高速ルックアップ用）
     annict_by_ncode: dict[str, dict] = {}
@@ -375,6 +377,15 @@ def main() -> None:
             if ncode_key and str(ar.get("is_matched", "")).lower() == "true":
                 annict_by_ncode[ncode_key] = ar.to_dict()
     logger.info("Annict データ読み込み: %d 件のマッチ済み作品", len(annict_by_ncode))
+
+    # 書籍化データを ncode でインデックス化
+    book_by_ncode: dict[str, dict] = {}
+    if not book_df.empty:
+        for _, br in book_df.iterrows():
+            ncode_key = str(br.get("ncode", ""))
+            if ncode_key and str(br.get("is_book", "")).lower() == "true":
+                book_by_ncode[ncode_key] = br.to_dict()
+    logger.info("書籍化データ読み込み: %d 件の書籍化作品", len(book_by_ncode))
 
     if novels_df.empty:
         logger.error("novels.csv が空またはファイルが存在しません。処理を中断します。")
@@ -498,6 +509,22 @@ def main() -> None:
         annict_satisfaction = _nan_to_none(annict_info.get("satisfaction_rate")) if annict_info else None
         annict_reviews = _nan_to_none(annict_info.get("reviews_count")) if annict_info else None
 
+        # 書籍化データ
+        book_info = book_by_ncode.get(ncode, {})
+        is_book = bool(book_info)
+        book_amazon_url = _nan_to_none(book_info.get("amazon_url_vol1")) if book_info else None
+        book_amazon_title = _nan_to_none(book_info.get("amazon_title_vol1")) if book_info else None
+        book_amazon_rating_raw = _nan_to_none(book_info.get("amazon_rating")) if book_info else None
+        book_amazon_review_raw = _nan_to_none(book_info.get("amazon_review_count")) if book_info else None
+        try:
+            book_amazon_rating = float(book_amazon_rating_raw) if book_amazon_rating_raw is not None else None
+        except (ValueError, TypeError):
+            book_amazon_rating = None
+        try:
+            book_amazon_review_count = int(float(book_amazon_review_raw)) if book_amazon_review_raw is not None else None
+        except (ValueError, TypeError):
+            book_amazon_review_count = None
+
         record: dict = {
             "ncode": ncode,
             "title": str(novel.get("title", "")),
@@ -511,6 +538,11 @@ def main() -> None:
             "annict_watchers_count": int(annict_watchers) if annict_watchers is not None else None,
             "annict_satisfaction_rate": float(annict_satisfaction) if annict_satisfaction is not None else None,
             "annict_reviews_count": int(annict_reviews) if annict_reviews is not None else None,
+            "is_book": is_book,
+            "amazon_url_vol1": book_amazon_url,
+            "amazon_title_vol1": book_amazon_title,
+            "amazon_rating": book_amazon_rating,
+            "amazon_review_count": book_amazon_review_count,
             "monthly_rank_latest": _nan_to_none(monthly_rank),
             "bookmark_count_latest": _nan_to_none(novel.get("bookmark_count_latest")),
             "weekly_unique_latest": _nan_to_none(novel.get("weekly_unique_latest")),

@@ -325,11 +325,12 @@ function renderRanking(weights) {
     .map((n, i) => {
       const barWidth = Math.max(2, Math.round(n._score));
       const animeBadge = n.is_anime ? ' <span class="anime-badge">アニメ化済み</span>' : '';
+      const bookBadge = n.is_book ? ' <span class="book-badge">書籍化</span>' : '';
       const extraCell = extraCol ? `<td>${extraCol.fmt(n[sortBy])}</td>` : '';
       const evalCell = n.all_hyoka_cnt_latest != null ? n.all_hyoka_cnt_latest.toLocaleString() + ' 件' : '—';
       return `<tr data-ncode="${n.ncode}" data-anime-id="${n._animeId || ''}">
         <td>${pageOffset + i + 1}</td>
-        <td>${escHtml(n.title)}${animeBadge}</td>
+        <td>${escHtml(n.title)}${animeBadge}${bookBadge}</td>
         <td>${escHtml(n.genre_label || '—')}</td>
         <td>${n.monthly_rank_latest != null ? n.monthly_rank_latest : '—'}</td>
         <td>${evalCell}</td>
@@ -423,6 +424,7 @@ function renderComparison(ncode) {
   const rankHistory = snapshotsData?.snapshots?.[ncode] || [];
 
   const animeBadge = novel.is_anime ? ' <span class="anime-badge">アニメ化済み</span>' : '';
+  const bookBadge = novel.is_book ? ' <span class="book-badge">書籍化</span>' : '';
   const narouUrl = `https://ncode.syosetu.com/${ncode.toLowerCase()}/`;
 
   // グラフトグルバー
@@ -494,6 +496,24 @@ function renderComparison(ncode) {
       </div>`;
   }
 
+  // 書籍情報（書籍化済み作品のみ）
+  let bookHtml = '';
+  if (novel.is_book) {
+    const amazonLink = novel.amazon_url_vol1
+      ? `<a class="novel-link" href="${escHtml(novel.amazon_url_vol1)}" target="_blank" rel="noopener">Amazon で見る</a>`
+      : '—';
+    bookHtml = `
+      <div class="detail-section">
+        <h4 class="detail-section-title">書籍情報（Amazon）</h4>
+        <div class="meta-row">
+          ${novel.amazon_title_vol1 != null ? `<span><strong>書籍タイトル(1巻):</strong> ${escHtml(novel.amazon_title_vol1)}</span>` : ''}
+          ${novel.amazon_rating != null ? `<span><strong>Amazon 評価:</strong> ★${novel.amazon_rating.toFixed(1)}</span>` : ''}
+          ${novel.amazon_review_count != null ? `<span><strong>レビュー件数:</strong> ${novel.amazon_review_count.toLocaleString()}件</span>` : ''}
+          <span><strong>Amazon リンク:</strong> ${amazonLink}</span>
+        </div>
+      </div>`;
+  }
+
   // global_point_latest: 旧カラム名との互換
   const gpLatest = novel.global_point_latest ?? novel.cumulative_view_latest;
 
@@ -503,7 +523,7 @@ function renderComparison(ncode) {
     </div>
     <div class="card">
       <h3>
-        <a class="novel-link" href="${narouUrl}" target="_blank" rel="noopener">${escHtml(novel.title)}</a>${animeBadge}
+        <a class="novel-link" href="${narouUrl}" target="_blank" rel="noopener">${escHtml(novel.title)}</a>${animeBadge}${bookBadge}
       </h3>
 
       <div class="detail-section">
@@ -550,6 +570,7 @@ function renderComparison(ncode) {
 
       ${growthTableHtml}
       ${annictHtml}
+      ${bookHtml}
       ${novel.story ? `<div class="novel-story">${escHtml(novel.story)}</div>` : ''}
     </div>
 
