@@ -17,6 +17,7 @@ NOVELS_CSV = DATA_DIR / "novels.csv"
 ANIME_WORKS_CSV = DATA_DIR / "anime_works.csv"
 DAILY_SNAPSHOTS_CSV = DATA_DIR / "daily_snapshots.csv"
 TRENDS_CACHE_CSV = DATA_DIR / "trends_cache.csv"
+ANNICT_WORKS_CSV = DATA_DIR / "annict_works.csv"
 
 NAROU_API_URL = "https://api.syosetu.com/novelapi/api/"
 

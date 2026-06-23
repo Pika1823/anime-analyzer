@@ -41,9 +41,15 @@ jobs:
         run: python scripts/fetch_snapshots.py
 
       - name: PyTrends キャッシュ更新（週次）
+        if: false  # 休止中（pytrends は非公式APIのため不安定）
         run: python scripts/fetch_trends.py
         env:
           FORCE_RUN: ${{ inputs.force_trends }}
+
+      - name: Annict アニメ化情報更新（週次）
+        run: python scripts/fetch_annict.py
+        env:
+          ANNICT_API_KEY: ${{ secrets.ANNICT_API_KEY }}
 
       - name: 類似度スコア計算・JSON 生成
         run: |

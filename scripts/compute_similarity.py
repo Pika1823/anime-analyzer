@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from utils import (
     ANIME_WORKS_CSV,
+    ANNICT_WORKS_CSV,
     DAILY_SNAPSHOTS_CSV,
     DOCS_DATA_DIR,
     NOVELS_CSV,
@@ -347,6 +348,16 @@ def main() -> None:
     anime_df = load_csv(ANIME_WORKS_CSV)
     snapshots_df = load_csv(DAILY_SNAPSHOTS_CSV)
     trends_df = load_csv(TRENDS_CACHE_CSV)
+    annict_df = load_csv(ANNICT_WORKS_CSV, dtype={"ncode": str})
+
+    # Annict データを ncode でインデックス化（高速ルックアップ用）
+    annict_by_ncode: dict[str, dict] = {}
+    if not annict_df.empty:
+        for _, ar in annict_df.iterrows():
+            ncode_key = str(ar.get("ncode", ""))
+            if ncode_key and str(ar.get("is_matched", "")).lower() == "true":
+                annict_by_ncode[ncode_key] = ar.to_dict()
+    logger.info("Annict データ読み込み: %d 件のマッチ済み作品", len(annict_by_ncode))
 
     if novels_df.empty:
         logger.error("novels.csv が空またはファイルが存在しません。処理を中断します。")
@@ -453,6 +464,13 @@ def main() -> None:
         pattern1_best_score = pattern1_scores[0]["score"] if pattern1_scores else None
         pattern1_best_anime_id = pattern1_scores[0]["anime_id"] if pattern1_scores else None
 
+        # Annict 人気度データ（マッチ済みの場合のみ）
+        annict_info = annict_by_ncode.get(ncode, {})
+        annict_id_val = _nan_to_none(annict_info.get("annict_id")) if annict_info else None
+        annict_watchers = _nan_to_none(annict_info.get("watchers_count")) if annict_info else None
+        annict_satisfaction = _nan_to_none(annict_info.get("satisfaction_rate")) if annict_info else None
+        annict_reviews = _nan_to_none(annict_info.get("reviews_count")) if annict_info else None
+
         record: dict = {
             "ncode": ncode,
             "title": str(novel.get("title", "")),
@@ -462,6 +480,10 @@ def main() -> None:
             "tags": novel_tags,
             "is_anime": is_anime,
             "anime_id": _nan_to_none(novel.get("anime_id")),
+            "annict_id": annict_id_val,
+            "annict_watchers_count": int(annict_watchers) if annict_watchers is not None else None,
+            "annict_satisfaction_rate": float(annict_satisfaction) if annict_satisfaction is not None else None,
+            "annict_reviews_count": int(annict_reviews) if annict_reviews is not None else None,
             "monthly_rank_latest": _nan_to_none(monthly_rank),
             "bookmark_count_latest": _nan_to_none(novel.get("bookmark_count_latest")),
             "weekly_unique_latest": _nan_to_none(novel.get("weekly_unique_latest")),

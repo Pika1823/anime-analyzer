@@ -155,7 +155,6 @@ async function loadData() {
   currentWeights = loadWeights();
   renderFactorBars(currentWeights);
   renderRanking(currentWeights);
-  populateTrendsSelects();
   renderSettings();
   initGrowthCorrSelects();
   renderGrowthTab();
@@ -1352,8 +1351,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-apply-weights').addEventListener('click', applyWeights);
   document.getElementById('btn-reset-weights').addEventListener('click', resetWeights);
 
-  document.getElementById('trends-novel-select').addEventListener('change', renderTrends);
-  document.getElementById('trends-anime-select').addEventListener('change', renderTrends);
+  // Trends タブは休止中のためイベントリスナーなし
 
   // 成長分析タブのコントロール
   const growthControls = {
