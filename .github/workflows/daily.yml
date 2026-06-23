@@ -46,6 +46,11 @@ jobs:
         env:
           FORCE_RUN: ${{ inputs.force_trends }}
 
+      - name: Annict アニメ化情報更新（週次）
+        run: python scripts/fetch_annict.py
+        env:
+          ANNICT_API_KEY: ${{ secrets.ANNICT_API_KEY }}
+
       - name: 類似度スコア計算・JSON 生成
         run: |
           if [ -f scripts/compute_similarity.py ]; then
