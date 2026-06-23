@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 
-from fetch_narou import build_novels_df, fetch_monthly_top, upsert_novels
+from fetch_narou import build_novels_df, fetch_monthly_top, find_anime_ncodes_by_title, upsert_novels
 
 
 # ---------------------------------------------------------------------------
@@ -297,6 +297,61 @@ def test_main_reapplies_is_anime_after_upsert(tmp_path, monkeypatch):
     fetch_narou.main()
     # anime_ncodes に N001 が含まれないので is_anime = False になること
     assert saved["df"].iloc[0]["is_anime"] is False or saved["df"].iloc[0]["is_anime"] == False  # noqa: E712
+
+
+# ---------------------------------------------------------------------------
+# find_anime_ncodes_by_title
+# ---------------------------------------------------------------------------
+
+def test_find_anime_ncodes_by_title_matches_exact():
+    """anime_works.csv のタイトルが novels.csv に完全一致する場合に ncode を返す。"""
+    anime_works = pd.DataFrame([{
+        "anime_title": "転生したらスライムだった件",
+        "source_type": "narou",
+        "ncode": "",
+    }])
+    novels = pd.DataFrame([
+        {"ncode": "N6316BN", "title": "転生したらスライムだった件"},
+        {"ncode": "N9999ZZ", "title": "全く関係ない作品"},
+    ])
+    result = find_anime_ncodes_by_title(anime_works, novels)
+    assert "N6316BN" in result
+
+
+def test_find_anime_ncodes_by_title_skips_with_ncode():
+    """ncode が設定済みのエントリはスキップされる（空 set を返す）。"""
+    anime_works = pd.DataFrame([{
+        "anime_title": "転生したらスライムだった件",
+        "source_type": "narou",
+        "ncode": "N6316BN",
+    }])
+    novels = pd.DataFrame([{"ncode": "N6316BN", "title": "転生したらスライムだった件"}])
+    result = find_anime_ncodes_by_title(anime_works, novels)
+    assert len(result) == 0
+
+
+def test_find_anime_ncodes_by_title_skips_non_narou():
+    """source_type が narou でない作品はスキップされる。"""
+    anime_works = pd.DataFrame([{
+        "anime_title": "鬼滅の刃",
+        "source_type": "other",
+        "ncode": "",
+    }])
+    novels = pd.DataFrame([{"ncode": "N0001AA", "title": "鬼滅の刃"}])
+    result = find_anime_ncodes_by_title(anime_works, novels)
+    assert len(result) == 0
+
+
+def test_find_anime_ncodes_by_title_below_threshold():
+    """類似度が閾値未満のタイトルはマッチしない。"""
+    anime_works = pd.DataFrame([{
+        "anime_title": "ABCDE異世界転生",
+        "source_type": "narou",
+        "ncode": "",
+    }])
+    novels = pd.DataFrame([{"ncode": "N0001AA", "title": "全く違うタイトル12345"}])
+    result = find_anime_ncodes_by_title(anime_works, novels)
+    assert len(result) == 0
 
 
 def test_main_skips_save_when_api_returns_zero_items(tmp_path, monkeypatch):

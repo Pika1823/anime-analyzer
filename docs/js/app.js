@@ -230,11 +230,11 @@ function renderRanking(weights) {
     return;
   }
 
-  // ジャンルフィルター選択肢を構築（未アニメ化全体から）
+  // ジャンルフィルター選択肢を構築（全作品から）
   const genreSelect = document.getElementById('filter-genre');
   const currentGenre = genreSelect.value;
   if (genreSelect.options.length <= 1) {
-    const allNovels = novelsData.novels.filter((n) => !n.is_anime);
+    const allNovels = novelsData.novels;
     const genres = [...new Set(allNovels.map((n) => n.genre_label).filter(Boolean))].sort();
     genres.forEach((g) => {
       const opt = document.createElement('option');
@@ -249,6 +249,7 @@ function renderRanking(weights) {
   const selectedGenre = genreSelect.value;
   const filterTop10 = document.getElementById('filter-top10').checked;
   const filterUnadapted = document.getElementById('filter-unadapted').checked;
+  const filterAdapted = document.getElementById('filter-adapted').checked;
 
   // スコア再計算と並び替え
   const ranked = novelsData.novels
@@ -258,6 +259,7 @@ function renderRanking(weights) {
     })
     .filter((n) => {
       if (filterUnadapted && n.is_anime) return false;
+      if (filterAdapted && !n.is_anime) return false;
       if (n._score < scoreThreshold) return false;
       if (selectedGenre && selectedGenre !== 'すべて' && n.genre_label !== selectedGenre) return false;
       if (filterTop10 && (n.best_rank_ever == null || n.best_rank_ever > 10)) return false;
@@ -361,6 +363,8 @@ function resetFilters() {
   if (top10) top10.checked = false;
   const unadapted = document.getElementById('filter-unadapted');
   if (unadapted) unadapted.checked = true;
+  const adapted = document.getElementById('filter-adapted');
+  if (adapted) adapted.checked = false;
 
   currentPage = 0;
   renderRanking(currentWeights);
@@ -1322,7 +1326,15 @@ document.addEventListener('DOMContentLoaded', () => {
     currentPage = 0;
     renderRanking(currentWeights);
   });
-  document.getElementById('filter-unadapted').addEventListener('change', () => {
+  document.getElementById('filter-unadapted').addEventListener('change', (e) => {
+    // 相互排他: 未アニメ化のみ ON → アニメ化済みのみ OFF
+    if (e.target.checked) document.getElementById('filter-adapted').checked = false;
+    currentPage = 0;
+    renderRanking(currentWeights);
+  });
+  document.getElementById('filter-adapted').addEventListener('change', (e) => {
+    // 相互排他: アニメ化済みのみ ON → 未アニメ化のみ OFF
+    if (e.target.checked) document.getElementById('filter-unadapted').checked = false;
     currentPage = 0;
     renderRanking(currentWeights);
   });

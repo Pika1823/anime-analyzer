@@ -5,6 +5,7 @@
 import os
 import time
 from datetime import date, datetime
+from difflib import SequenceMatcher
 
 import pandas as pd
 import requests
@@ -33,6 +34,9 @@ NAROU_RETRY_WAIT_SEC = 10
 # 作品タイプフィルター（環境変数 NAROU_NOVEL_TYPE で上書き可能）
 # 空文字=すべて / "t"=短編 / "r"=連載中 / "er"=完結済連載 / "re"=すべての連載 / "ter"=短編+完結済
 NAROU_NOVEL_TYPE: str = os.environ.get("NAROU_NOVEL_TYPE", "")
+
+# anime_works.csv の ncode 未設定エントリに対してタイトルマッチで ncode を特定する際の類似度閾値
+ANIME_TITLE_MATCH_THRESHOLD = 0.7
 
 
 def fetch_monthly_top(limit: int = NAROU_MAX_COUNT) -> list[dict]:
@@ -110,6 +114,56 @@ def _unix_to_iso(ts) -> str:
         return datetime.fromtimestamp(int(ts)).isoformat()
     except (ValueError, OSError):
         return ""
+
+
+def find_anime_ncodes_by_title(anime_works: pd.DataFrame, novels_df: pd.DataFrame) -> set[str]:
+    """anime_works.csv の source_type=narou で ncode 未設定の作品をタイトルマッチで novels.csv から検索する。
+
+    ncode が登録済みの作品は既に anime_ncodes に含まれるためスキップ。
+    類似度が ANIME_TITLE_MATCH_THRESHOLD 以上のものを is_anime=True 対象として返す。
+
+    Args:
+        anime_works: anime_works.csv の DataFrame
+        novels_df: novels.csv の DataFrame
+
+    Returns:
+        タイトルマッチで特定したアニメ化済み作品の ncode セット
+    """
+    if anime_works.empty or novels_df.empty:
+        return set()
+
+    # ncode なしの narou 原作アニメタイトルリストを構築
+    no_ncode_mask = (
+        anime_works["source_type"].str.lower() == "narou"
+    ) & (
+        anime_works["ncode"].isna() | (anime_works["ncode"].str.strip() == "")
+    )
+    anime_titles = anime_works.loc[no_ncode_mask, "anime_title"].dropna().tolist()
+
+    if not anime_titles:
+        return set()
+
+    novel_titles = novels_df["title"].tolist()
+    novel_ncodes = novels_df["ncode"].tolist()
+    matched_ncodes: set[str] = set()
+
+    for anime_title in anime_titles:
+        best_ncode: str | None = None
+        best_score = 0.0
+        for novel_title, novel_ncode in zip(novel_titles, novel_ncodes):
+            score = SequenceMatcher(None, str(anime_title), str(novel_title)).ratio()
+            if score > best_score:
+                best_score = score
+                best_ncode = str(novel_ncode)
+        if best_score >= ANIME_TITLE_MATCH_THRESHOLD and best_ncode:
+            matched_ncodes.add(best_ncode)
+            logger.info(
+                "タイトルマッチ（ncode補完）: '%s' → ncode=%s (スコア=%.3f)",
+                anime_title, best_ncode, best_score,
+            )
+
+    logger.info("タイトルマッチによる追加アニメ化作品: %d 件", len(matched_ncodes))
+    return matched_ncodes
 
 
 def build_novels_df(raw: list[dict], anime_ncodes: set[str]) -> pd.DataFrame:
@@ -218,8 +272,12 @@ def main() -> None:
     new_df = build_novels_df(raw, anime_ncodes)
     existing = load_csv(NOVELS_CSV, dtype={"ncode": str})
     merged = upsert_novels(existing, new_df).copy()
-    # upsert 後に is_anime を anime_ncodes で再付与（update() による劣化を防ぐ）
-    merged["is_anime"] = merged["ncode"].isin(anime_ncodes).astype(bool)
+
+    # upsert 後に is_anime を再付与（update() による劣化を防ぐ）
+    # ncode 未設定の narou 原作アニメをタイトルマッチで補完して合算する
+    title_matched_ncodes = find_anime_ncodes_by_title(anime_works, merged)
+    all_anime_ncodes = anime_ncodes | title_matched_ncodes
+    merged["is_anime"] = merged["ncode"].isin(all_anime_ncodes).astype(bool)
     # 今週のランキングに含まれていない作品の月刊順位をランク外（None）にリセット
     new_ncodes_set = set(new_df["ncode"])
     merged.loc[~merged["ncode"].isin(new_ncodes_set), "monthly_rank_latest"] = None
