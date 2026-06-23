@@ -632,6 +632,31 @@ tbody td {
   border-radius: 0 4px 4px 0;
 }
 
+/* 成長分析タブ - 相関グラフコントロール */
+.growth-corr-controls {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.growth-corr-controls label {
+  font-size: 0.875rem;
+  color: #555;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.growth-corr-controls select {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  max-width: 260px;
+}
+
 /* レスポンシブ調整 */
 @media (max-width: 600px) {
   header {

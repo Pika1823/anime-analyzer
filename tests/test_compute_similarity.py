@@ -19,6 +19,7 @@ from compute_similarity import (
     calc_bm_view_score,
     calc_best_rank_ever,
     calc_eval_score,
+    calc_growth_metrics,
     calc_monthly_point_score,
     calc_pattern1_score,
     calc_rank_score,
@@ -232,6 +233,56 @@ def test_calc_pattern1_score_genre_match_increases_score():
         anime=anime,
     )
     assert abs(match_result["score"] - nomatch_result["score"] - 25.0) < 1e-6
+
+
+# --- calc_growth_metrics ---
+
+def test_calc_growth_metrics_empty_snapshots():
+    """スナップショットが空の場合は空辞書を返す。"""
+    result = calc_growth_metrics("N001", pd.DataFrame())
+    assert result == {}
+
+
+def test_calc_growth_metrics_ncode_not_found():
+    """該当 ncode がない場合は空辞書を返す。"""
+    snaps = pd.DataFrame([{"ncode": "N999", "date": "2026-01-01", "all_hyoka_cnt": 100, "all_point": 1000}])
+    result = calc_growth_metrics("N001", snaps)
+    assert result == {}
+
+
+def test_calc_growth_metrics_30d_delta():
+    """30日前のスナップショットから増加数・増加率を正しく計算する。"""
+    from datetime import date, timedelta
+    today = date.today()
+    snaps = pd.DataFrame([
+        {"ncode": "N001", "date": (today - timedelta(days=35)).isoformat(), "all_hyoka_cnt": 100, "all_point": 1000},
+        {"ncode": "N001", "date": (today - timedelta(days=8)).isoformat(), "all_hyoka_cnt": 130, "all_point": 1300},
+        {"ncode": "N001", "date": today.isoformat(), "all_hyoka_cnt": 200, "all_point": 2000},
+    ])
+    result = calc_growth_metrics("N001", snaps)
+    assert "all_hyoka_cnt" in result
+    assert "all_point" in result
+    # 30日前比較: 200 - 100 = 100
+    assert result["all_hyoka_cnt"]["30d"]["delta"] == 100
+    assert result["all_hyoka_cnt"]["30d"]["base"] == 100
+    assert result["all_hyoka_cnt"]["30d"]["current"] == 200
+    assert abs(result["all_hyoka_cnt"]["30d"]["rate"] - 100.0) < 0.01
+    # 7日前比較: 200 - 130 = 70
+    # 7日前比較: cutoff(today-7日)以前の最新は -8日スナップ → 200 - 130 = 70
+    assert result["all_hyoka_cnt"]["7d"]["delta"] == 70
+    # 1日前比較: cutoff(today-1日)以前の最新も -8日スナップ → 同じく 70
+    assert result["all_hyoka_cnt"]["1d"]["delta"] == 70
+
+
+def test_calc_growth_metrics_insufficient_history():
+    """過去データが存在しない期間は None を返す。"""
+    from datetime import date
+    snaps = pd.DataFrame([
+        {"ncode": "N001", "date": date.today().isoformat(), "all_hyoka_cnt": 200, "all_point": 2000},
+    ])
+    result = calc_growth_metrics("N001", snaps)
+    assert result["all_hyoka_cnt"]["1d"]["delta"] is None
+    assert result["all_hyoka_cnt"]["1d"]["current"] == 200
 
 
 # --- main 統合テスト ---

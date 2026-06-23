@@ -87,6 +87,34 @@ let trendsChart = null;
 let topAnimeChart = null;
 let radarChart = null;
 let benchmarkChart = null;
+let growthTrendChart = null;
+let correlationChart = null;
+
+// ---- 成長分析タブの状態 ----
+let growthMetric = 'all_hyoka_cnt';
+let growthPeriod = '30d';
+let growthValueType = 'delta';
+let growthTopN = 10;
+
+// 相関グラフ軸の選択肢定義
+const CORR_AXIS_OPTIONS = [
+  { key: 'all_hyoka_cnt_latest',           label: '評価件数（現在値）' },
+  { key: 'all_point_latest',               label: '評価ポイント（現在値）' },
+  { key: 'monthly_rank_latest',            label: '月刊順位（現在）' },
+  { key: 'monthly_point_latest',           label: '月間ポイント（現在値）' },
+  { key: 'growth_all_hyoka_cnt_1d_delta',  label: '評価件数 前日増加数' },
+  { key: 'growth_all_hyoka_cnt_7d_delta',  label: '評価件数 7日増加数' },
+  { key: 'growth_all_hyoka_cnt_30d_delta', label: '評価件数 30日増加数' },
+  { key: 'growth_all_hyoka_cnt_1d_rate',   label: '評価件数 前日増加率(%)' },
+  { key: 'growth_all_hyoka_cnt_7d_rate',   label: '評価件数 7日増加率(%)' },
+  { key: 'growth_all_hyoka_cnt_30d_rate',  label: '評価件数 30日増加率(%)' },
+  { key: 'growth_all_point_1d_delta',      label: '評価ポイント 前日増加数' },
+  { key: 'growth_all_point_7d_delta',      label: '評価ポイント 7日増加数' },
+  { key: 'growth_all_point_30d_delta',     label: '評価ポイント 30日増加数' },
+  { key: 'growth_all_point_1d_rate',       label: '評価ポイント 前日増加率(%)' },
+  { key: 'growth_all_point_7d_rate',       label: '評価ポイント 7日増加率(%)' },
+  { key: 'growth_all_point_30d_rate',      label: '評価ポイント 30日増加率(%)' },
+];
 
 const DEFAULT_WEIGHTS = { genre: 0, tag: 0, rank: 34, bmView: 33, growth: 0, eval: 33, monthlyPoint: 0, activity: 0 };
 const LS_KEY = 'animeTool.weights';
@@ -129,6 +157,8 @@ async function loadData() {
   renderRanking(currentWeights);
   populateTrendsSelects();
   renderSettings();
+  initGrowthCorrSelects();
+  renderGrowthTab();
 }
 
 function showLoading() {
@@ -915,6 +945,263 @@ function renderFactorBars(weights) {
   }).join('');
 }
 
+// ---- View 5: 成長分析 ----
+
+// growth_metrics から値を取り出すユーティリティ
+function getNovelGrowthValue(novel, axisKey) {
+  if (!axisKey.startsWith('growth_')) return novel[axisKey] ?? null;
+  const m = axisKey.slice(7).match(/^(.+)_(1d|7d|30d)_(delta|rate)$/);
+  if (!m) return null;
+  return novel.growth_metrics?.[m[1]]?.[m[2]]?.[m[3]] ?? null;
+}
+
+// 成長ランキングの上位N件を取得する（ランキング表・グラフで共用）
+function getGrowthRankedNovels(metric, period, valueType, topN) {
+  if (!novelsData?.novels) return [];
+  return novelsData.novels
+    .filter((n) => !n.is_anime)
+    .map((n) => {
+      const gm = n.growth_metrics?.[metric]?.[period];
+      return { ...n, _gval: gm ? gm[valueType] : null };
+    })
+    .filter((n) => n._gval !== null)
+    .sort((a, b) => b._gval - a._gval)
+    .slice(0, topN);
+}
+
+function initGrowthCorrSelects() {
+  const xSel = document.getElementById('corr-x-axis');
+  const ySel = document.getElementById('corr-y-axis');
+  if (!xSel || !ySel) return;
+  const makeOpts = (defaultKey) =>
+    CORR_AXIS_OPTIONS.map((o) =>
+      `<option value="${o.key}"${o.key === defaultKey ? ' selected' : ''}>${escHtml(o.label)}</option>`
+    ).join('');
+  xSel.innerHTML = makeOpts('growth_all_hyoka_cnt_30d_delta');
+  ySel.innerHTML = makeOpts('growth_all_point_30d_delta');
+}
+
+function renderGrowthTab() {
+  renderGrowthRankingTable();
+  renderGrowthTrendChart();
+  renderCorrelationChart();
+}
+
+function renderGrowthRankingTable() {
+  const thead = document.getElementById('growth-ranking-head');
+  const tbody = document.getElementById('growth-ranking-body');
+  if (!tbody) return;
+
+  const METRIC_LABELS = { all_hyoka_cnt: '評価件数', all_point: '評価ポイント' };
+  const PERIOD_LABELS = { '1d': '前日比', '7d': '7日比', '30d': '30日比' };
+  const UNIT = { all_hyoka_cnt: '件', all_point: 'pt' };
+  const metricLabel = METRIC_LABELS[growthMetric] || growthMetric;
+  const periodLabel = PERIOD_LABELS[growthPeriod] || growthPeriod;
+  const unit = UNIT[growthMetric] || '';
+
+  if (thead) {
+    thead.innerHTML = `<tr>
+      <th>順位</th>
+      <th>タイトル</th>
+      <th>ジャンル</th>
+      <th>月刊順位</th>
+      <th>${metricLabel}（現在値）</th>
+      <th>${periodLabel} 増加数</th>
+      <th>${periodLabel} 増加率(%)</th>
+    </tr>`;
+  }
+
+  if (!novelsData?.novels) {
+    tbody.innerHTML = '<tr><td colspan="7" class="placeholder">データ収集中です。</td></tr>';
+    return;
+  }
+
+  const novels = getGrowthRankedNovels(growthMetric, growthPeriod, growthValueType, growthTopN);
+
+  if (novels.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="placeholder">成長データが蓄積されていません。スナップショット収集後に表示されます。</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = novels.map((n, i) => {
+    const gm = n.growth_metrics?.[growthMetric]?.[growthPeriod];
+    const currentVal = gm?.current;
+    const delta = gm?.delta;
+    const rate = gm?.rate;
+    const deltaStr = delta != null ? (delta >= 0 ? '+' : '') + delta.toLocaleString() + ' ' + unit : '—';
+    const rateStr = rate != null ? (rate >= 0 ? '+' : '') + rate.toFixed(2) + '%' : '—';
+    const deltaColor = delta != null && delta > 0 ? 'style="color:#05c46b;font-weight:700;"' : delta != null && delta < 0 ? 'style="color:#e94560;"' : '';
+    const rateColor = rate != null && rate > 0 ? 'style="color:#05c46b;font-weight:700;"' : rate != null && rate < 0 ? 'style="color:#e94560;"' : '';
+    return `<tr>
+      <td>${i + 1}</td>
+      <td>${escHtml(n.title)}</td>
+      <td>${escHtml(n.genre_label || '—')}</td>
+      <td>${n.monthly_rank_latest != null ? n.monthly_rank_latest : '—'}</td>
+      <td>${currentVal != null ? currentVal.toLocaleString() + ' ' + unit : '—'}</td>
+      <td ${deltaColor}>${deltaStr}</td>
+      <td ${rateColor}>${rateStr}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderGrowthTrendChart() {
+  const ctx = document.getElementById('growth-trend-chart');
+  const titleEl = document.getElementById('growth-trend-chart-title');
+  if (!ctx) return;
+
+  if (growthTrendChart) { growthTrendChart.destroy(); growthTrendChart = null; }
+
+  if (!novelsData?.novels || !snapshotsData?.snapshots) {
+    ctx.parentElement.innerHTML = '<p style="color:#888;font-size:0.875rem;">スナップショットデータ収集中です。毎日追記されます。</p>';
+    return;
+  }
+
+  const topNovels = getGrowthRankedNovels(growthMetric, growthPeriod, growthValueType, growthTopN);
+  if (topNovels.length === 0) {
+    ctx.parentElement.innerHTML = '<p style="color:#888;font-size:0.875rem;">成長データが蓄積されていません。</p>';
+    return;
+  }
+
+  const METRIC_LABELS = { all_hyoka_cnt: '累計評価件数（件）', all_point: '累計評価ポイント' };
+  const PERIOD_LABELS = { '1d': '前日', '7d': '7日前', '30d': '30日前' };
+  if (titleEl) titleEl.textContent = `成長推移グラフ — ${METRIC_LABELS[growthMetric] || growthMetric}（上位${growthTopN}作品）`;
+
+  const allDates = new Set();
+  topNovels.forEach((n) => {
+    (snapshotsData.snapshots[n.ncode] || []).forEach((s) => allDates.add(s.date));
+  });
+  const sortedDates = [...allDates].sort();
+
+  if (sortedDates.length === 0) {
+    ctx.parentElement.innerHTML = '<p style="color:#888;font-size:0.875rem;">スナップショットデータが空です。</p>';
+    return;
+  }
+
+  const COLORS = ['#e94560','#0f3460','#f5a623','#05c46b','#533483','#4fc3f7','#ff7043','#66bb6a','#ab47bc','#26c6da',
+                  '#ef5350','#1565c0','#ff8f00','#2e7d32','#6a1b9a','#00acc1','#e64a19','#43a047','#8e24aa','#00838f'];
+
+  const datasets = topNovels.map((n, idx) => {
+    const snaps = snapshotsData.snapshots[n.ncode] || [];
+    const snapMap = Object.fromEntries(snaps.map((s) => [s.date, s]));
+    const shortTitle = n.title.length > 18 ? n.title.slice(0, 18) + '…' : n.title;
+    return {
+      label: shortTitle,
+      data: sortedDates.map((d) => snapMap[d]?.[growthMetric] ?? null),
+      borderColor: COLORS[idx % COLORS.length],
+      backgroundColor: 'transparent',
+      pointRadius: 2,
+      pointHoverRadius: 5,
+      spanGaps: false,
+      tension: 0.2,
+      borderWidth: 2,
+    };
+  });
+
+  growthTrendChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: sortedDates, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { title: { display: true, text: METRIC_LABELS[growthMetric] || growthMetric }, min: 0 },
+        x: { ticks: { maxTicksLimit: 15, maxRotation: 45 } },
+      },
+      plugins: {
+        legend: { display: true, position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } },
+        tooltip: {
+          callbacks: {
+            label: (c) => ` ${c.dataset.label}: ${c.parsed.y != null ? c.parsed.y.toLocaleString() : 'データなし'}`,
+          },
+        },
+      },
+    },
+  });
+}
+
+function renderCorrelationChart() {
+  const ctx = document.getElementById('correlation-chart');
+  if (!ctx) return;
+
+  if (correlationChart) { correlationChart.destroy(); correlationChart = null; }
+
+  if (!novelsData?.novels) {
+    ctx.parentElement.innerHTML = '<p style="color:#888;font-size:0.875rem;">データ収集中です。</p>';
+    return;
+  }
+
+  const xKey = document.getElementById('corr-x-axis')?.value || 'growth_all_hyoka_cnt_30d_delta';
+  const yKey = document.getElementById('corr-y-axis')?.value || 'growth_all_point_30d_delta';
+  const xLabel = CORR_AXIS_OPTIONS.find((o) => o.key === xKey)?.label || xKey;
+  const yLabel = CORR_AXIS_OPTIONS.find((o) => o.key === yKey)?.label || yKey;
+
+  const allPoints = novelsData.novels
+    .filter((n) => !n.is_anime)
+    .map((n) => {
+      const x = getNovelGrowthValue(n, xKey);
+      const y = getNovelGrowthValue(n, yKey);
+      if (x === null || y === null) return null;
+      return { x, y, title: n.title, ncode: n.ncode };
+    })
+    .filter(Boolean);
+
+  if (allPoints.length === 0) {
+    ctx.parentElement.innerHTML = '<p style="color:#888;font-size:0.875rem;">相関データがありません。スナップショット蓄積後に表示されます。</p>';
+    return;
+  }
+
+  // 上位N作品を成長ランキングから取得してハイライト
+  const topNcodes = new Set(
+    getGrowthRankedNovels(growthMetric, growthPeriod, growthValueType, growthTopN).map((n) => n.ncode)
+  );
+  const topPoints = allPoints.filter((p) => topNcodes.has(p.ncode));
+  const restPoints = allPoints.filter((p) => !topNcodes.has(p.ncode));
+
+  correlationChart = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [
+        {
+          label: `上位${growthTopN}作品（成長ランキング）`,
+          data: topPoints,
+          backgroundColor: '#e9456099',
+          borderColor: '#e94560',
+          pointRadius: 7,
+          pointHoverRadius: 9,
+        },
+        {
+          label: 'その他の作品',
+          data: restPoints,
+          backgroundColor: '#0f346033',
+          borderColor: '#0f346055',
+          pointRadius: 3,
+          pointHoverRadius: 5,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { title: { display: true, text: xLabel } },
+        y: { title: { display: true, text: yLabel } },
+      },
+      plugins: {
+        legend: { display: true, position: 'bottom' },
+        tooltip: {
+          callbacks: {
+            label: (c) => {
+              const p = c.raw;
+              const t = p.title ? (p.title.length > 22 ? p.title.slice(0, 22) + '…' : p.title) : '';
+              return ` ${t}: (${p.x != null ? Number(p.x).toLocaleString() : '—'}, ${p.y != null ? Number(p.y).toLocaleString() : '—'})`;
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
 // ---- View 4: 設定 ----
 function renderSettings() {
   updateWeightUI();
@@ -1067,6 +1354,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('trends-novel-select').addEventListener('change', renderTrends);
   document.getElementById('trends-anime-select').addEventListener('change', renderTrends);
+
+  // 成長分析タブのコントロール
+  const growthControls = {
+    'growth-metric':     (v) => { growthMetric = v; },
+    'growth-period':     (v) => { growthPeriod = v; },
+    'growth-value-type': (v) => { growthValueType = v; },
+    'growth-top-n':      (v) => { growthTopN = parseInt(v, 10); },
+  };
+  Object.entries(growthControls).forEach(([id, setter]) => {
+    document.getElementById(id)?.addEventListener('change', (e) => {
+      setter(e.target.value);
+      renderGrowthTab();
+    });
+  });
+
+  document.getElementById('corr-x-axis')?.addEventListener('change', renderCorrelationChart);
+  document.getElementById('corr-y-axis')?.addEventListener('change', renderCorrelationChart);
 
   const infoToggle = document.getElementById('info-toggle');
   const infoBody = document.getElementById('info-body');

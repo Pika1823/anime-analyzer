@@ -53,6 +53,10 @@ NAROU_GENRE_CATEGORY: dict[str, str] = {
     "9999": "ノンジャンル",
 }
 
+# 成長メトリクス計算用定数
+GROWTH_PERIODS: list[tuple[int, str]] = [(1, "1d"), (7, "7d"), (30, "30d")]
+GROWTH_METRICS_KEYS: list[str] = ["all_hyoka_cnt", "all_point"]
+
 # Pattern1 スコア計算の重みパラメータ（仮説ベース）
 DEFAULT_WEIGHTS: dict[str, float] = {
     "genre":         0.25,
@@ -166,6 +170,65 @@ def calc_best_rank_ever(ncode: str, snapshots: pd.DataFrame) -> int | None:
     if rows.empty:
         return None
     return int(rows["monthly_rank"].min())
+
+
+def calc_growth_metrics(ncode: str, snapshots: pd.DataFrame) -> dict:
+    """スナップショットから1日/7日/30日前との差分・増加率を計算する。
+
+    Returns:
+        {metric: {period: {delta, rate, base, current}}} 形式の辞書。
+        データ不足の場合は delta/rate/base が None になる。
+    """
+    if snapshots.empty or "ncode" not in snapshots.columns:
+        return {}
+
+    novel_snaps = snapshots[snapshots["ncode"] == ncode].copy()
+    if novel_snaps.empty:
+        return {}
+
+    novel_snaps["date"] = pd.to_datetime(novel_snaps["date"], errors="coerce")
+    novel_snaps = novel_snaps.dropna(subset=["date"]).sort_values("date")
+    if novel_snaps.empty:
+        return {}
+
+    latest_row = novel_snaps.iloc[-1]
+    latest_date = latest_row["date"]
+
+    result: dict = {}
+    for metric in GROWTH_METRICS_KEYS:
+        result[metric] = {}
+        current_raw = latest_row.get(metric)
+        if current_raw is None or (isinstance(current_raw, float) and math.isnan(current_raw)):
+            for _, period_key in GROWTH_PERIODS:
+                result[metric][period_key] = {"delta": None, "rate": None, "base": None, "current": None}
+            continue
+
+        current_int = int(float(current_raw))
+
+        for days, period_key in GROWTH_PERIODS:
+            cutoff = latest_date - pd.Timedelta(days=days)
+            past_rows = novel_snaps[novel_snaps["date"] <= cutoff]
+
+            if past_rows.empty:
+                result[metric][period_key] = {"delta": None, "rate": None, "base": None, "current": current_int}
+                continue
+
+            past_raw = past_rows.iloc[-1].get(metric)
+            if past_raw is None or (isinstance(past_raw, float) and math.isnan(past_raw)):
+                result[metric][period_key] = {"delta": None, "rate": None, "base": None, "current": current_int}
+                continue
+
+            base_int = int(float(past_raw))
+            delta = current_int - base_int
+            rate = round(delta / base_int * 100, 2) if base_int > 0 else None
+            result[metric][period_key] = {
+                "delta": delta,
+                "rate": rate,
+                "base": base_int,
+                "current": current_int,
+            }
+
+    return result
 
 
 def calc_view_growth(ncode: str, snapshots: pd.DataFrame) -> float:
@@ -331,6 +394,9 @@ def main() -> None:
         # View 成長率計算
         view_growth_6mo = calc_view_growth(ncode, snapshots_df)
 
+        # 成長メトリクス計算（各評価指標の 1日/7日/30日増加量）
+        growth_metrics = calc_growth_metrics(ncode, snapshots_df)
+
         genre_code = str(novel.get("genre", ""))
         genre_label = get_genre_label(genre_code)
         novel_tags = str(novel.get("tags", "")) if not (isinstance(novel.get("tags"), float) and math.isnan(novel.get("tags"))) else ""
@@ -421,6 +487,7 @@ def main() -> None:
             "pattern1_best_score": pattern1_best_score,
             "pattern1_best_anime_id": pattern1_best_anime_id,
             "pattern1_scores": pattern1_scores,
+            "growth_metrics": growth_metrics,
         }
         novel_records.append(record)
 
@@ -521,11 +588,13 @@ def main() -> None:
             if not ncode_val or not date_val:
                 continue
             hyoka_val = _nan_to_none(row.get("all_hyoka_cnt"))
+            all_point_snap = _nan_to_none(row.get("all_point"))
             snapshots_by_ncode.setdefault(ncode_val, []).append({
                 "date": date_val,
                 "monthly_rank": int(rank_val) if rank_val is not None else None,
                 "bookmark_count": int(bm_val) if bm_val is not None else None,
                 "all_hyoka_cnt": int(float(hyoka_val)) if hyoka_val is not None else None,
+                "all_point": int(float(all_point_snap)) if all_point_snap is not None else None,
             })
 
     snapshots_merged = {

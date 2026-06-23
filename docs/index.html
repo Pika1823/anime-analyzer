@@ -16,6 +16,7 @@
     <button class="tab-btn active" data-tab="ranking">類似度ランキング</button>
     <button class="tab-btn" data-tab="comparison">比較グラフ</button>
     <button class="tab-btn" data-tab="trends">Trends 比較</button>
+    <button class="tab-btn" data-tab="growth">📈 成長分析</button>
     <button class="tab-btn" data-tab="settings">⚙ 設定</button>
   </nav>
 </header>
@@ -143,6 +144,73 @@
 
     <div class="chart-container" id="trends-chart-container">
       <p class="placeholder">Trendsデータ収集中です。</p>
+    </div>
+  </section>
+
+  <!-- Tab 5: 成長分析 -->
+  <section id="tab-growth" class="tab-panel">
+    <h2 class="section-title">📈 成長分析</h2>
+
+    <!-- コントロールバー（ランキング表・成長推移グラフ共通） -->
+    <div class="filter-bar">
+      <label>指標:
+        <select id="growth-metric">
+          <option value="all_hyoka_cnt">評価件数</option>
+          <option value="all_point">評価ポイント</option>
+        </select>
+      </label>
+      <label>期間:
+        <select id="growth-period">
+          <option value="1d">前日（1日）</option>
+          <option value="7d">7日前</option>
+          <option value="30d" selected>30日前</option>
+        </select>
+      </label>
+      <label>並び替え:
+        <select id="growth-value-type">
+          <option value="delta">増加数</option>
+          <option value="rate">増加率(%)</option>
+        </select>
+      </label>
+      <label>上位:
+        <select id="growth-top-n">
+          <option value="5">5位まで</option>
+          <option value="10" selected>10位まで</option>
+          <option value="30">30位まで</option>
+          <option value="50">50位まで</option>
+          <option value="100">100位まで</option>
+        </select>
+      </label>
+    </div>
+
+    <!-- 成長ランキング表 -->
+    <div class="table-wrap" style="margin-bottom:1.25rem;">
+      <table>
+        <thead id="growth-ranking-head">
+          <tr><th colspan="7" style="text-align:center;">データを読み込み中...</th></tr>
+        </thead>
+        <tbody id="growth-ranking-body">
+          <tr><td colspan="7" class="placeholder">データを読み込み中です...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 成長推移グラフ（折れ線） -->
+    <div class="card">
+      <h4 class="chart-title" id="growth-trend-chart-title">成長推移グラフ（折れ線）</h4>
+      <div class="chart-container" style="height:360px;"><canvas id="growth-trend-chart"></canvas></div>
+      <p class="graph-hint">💡 上位N作品の選択指標の日次推移を重ねて表示します。急上昇している作品は注目が集まっているサインです。右上がりの傾きが急なほど成長速度が速い作品です。</p>
+    </div>
+
+    <!-- 相関グラフ（散布図） -->
+    <div class="card">
+      <h4 class="chart-title">相関グラフ（散布図）</h4>
+      <div class="growth-corr-controls">
+        <label>X軸: <select id="corr-x-axis"></select></label>
+        <label>Y軸: <select id="corr-y-axis"></select></label>
+      </div>
+      <div class="chart-container" style="height:420px;"><canvas id="correlation-chart"></canvas></div>
+      <p class="graph-hint">💡 2つの指標の相関を確認できます。右上に集まるほど両指標で高い作品です。赤点（上位N作品）の分布から「評価件数が多い作品ほど成長率も高いか」「月刊順位が高いほど評価ポイント増加も大きいか」などを読み取れます。</p>
     </div>
   </section>
 
