@@ -1,9 +1,14 @@
 {
-  "generated_at": "2026-06-21",
+  "generated_at": "2026-06-22",
   "novels": {
     "N1189MF": [
       {
         "week_start": "2026-06-15",
+        "score": null,
+        "status": "skip"
+      },
+      {
+        "week_start": "2026-06-22",
         "score": null,
         "status": "skip"
       }
@@ -473,6 +478,11 @@
         "week_start": "2026-06-20",
         "score": 0.0,
         "status": "ok"
+      },
+      {
+        "week_start": "2026-06-22",
+        "score": null,
+        "status": "skip"
       }
     ],
     "N6050MG": [
@@ -940,6 +950,471 @@
         "week_start": "2026-06-20",
         "score": 0.0,
         "status": "ok"
+      },
+      {
+        "week_start": "2026-03-22",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-23",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-24",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-25",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-26",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-27",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-28",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-29",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-30",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-31",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-01",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-02",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-03",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-04",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-05",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-06",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-07",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-08",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-09",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-10",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-11",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-12",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-13",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-14",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-15",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-16",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-17",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-18",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-19",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-20",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-21",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-22",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-23",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-24",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-25",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-26",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-27",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-28",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-29",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-30",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-01",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-02",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-03",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-04",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-05",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-06",
+        "score": 100.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-07",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-08",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-09",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-10",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-11",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-12",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-13",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-14",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-15",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-16",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-17",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-18",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-19",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-20",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-21",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-22",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-23",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-24",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-25",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-26",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-27",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-28",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-29",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-30",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-31",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-01",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-02",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-03",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-04",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-05",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-06",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-07",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-08",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-09",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-10",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-11",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-12",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-13",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-14",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-15",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-16",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-17",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-18",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-19",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-20",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-21",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-22",
+        "score": 0.0,
+        "status": "ok"
       }
     ],
     "N1602MG": [
@@ -947,6 +1422,471 @@
         "week_start": "2026-06-15",
         "score": null,
         "status": "skip"
+      },
+      {
+        "week_start": "2026-03-22",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-23",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-24",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-25",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-26",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-27",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-28",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-29",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-30",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-31",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-01",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-02",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-03",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-04",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-05",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-06",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-07",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-08",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-09",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-10",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-11",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-12",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-13",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-14",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-15",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-16",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-17",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-18",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-19",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-20",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-21",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-22",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-23",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-24",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-25",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-26",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-27",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-28",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-29",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-30",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-01",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-02",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-03",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-04",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-05",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-06",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-07",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-08",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-09",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-10",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-11",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-12",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-13",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-14",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-15",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-16",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-17",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-18",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-19",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-20",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-21",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-22",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-23",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-24",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-25",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-26",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-27",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-28",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-29",
+        "score": 100.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-30",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-31",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-01",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-02",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-03",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-04",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-05",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-06",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-07",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-08",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-09",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-10",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-11",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-12",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-13",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-14",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-15",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-16",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-17",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-18",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-19",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-20",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-21",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-22",
+        "score": 0.0,
+        "status": "ok"
       }
     ],
     "N6882MG": [
@@ -954,6 +1894,471 @@
         "week_start": "2026-06-15",
         "score": null,
         "status": "skip"
+      },
+      {
+        "week_start": "2026-03-22",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-23",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-24",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-25",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-26",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-27",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-28",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-29",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-30",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-31",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-01",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-02",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-03",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-04",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-05",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-06",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-07",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-08",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-09",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-10",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-11",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-12",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-13",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-14",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-15",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-16",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-17",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-18",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-19",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-20",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-21",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-22",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-23",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-24",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-25",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-26",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-27",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-28",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-29",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-30",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-01",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-02",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-03",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-04",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-05",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-06",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-07",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-08",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-09",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-10",
+        "score": 100.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-11",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-12",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-13",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-14",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-15",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-16",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-17",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-18",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-19",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-20",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-21",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-22",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-23",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-24",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-25",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-26",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-27",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-28",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-29",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-30",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-31",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-01",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-02",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-03",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-04",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-05",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-06",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-07",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-08",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-09",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-10",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-11",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-12",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-13",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-14",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-15",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-16",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-17",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-18",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-19",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-20",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-21",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-22",
+        "score": 0.0,
+        "status": "ok"
       }
     ],
     "N5398MG": [
@@ -1421,6 +2826,11 @@
         "week_start": "2026-06-20",
         "score": 0.0,
         "status": "ok"
+      },
+      {
+        "week_start": "2026-06-22",
+        "score": null,
+        "status": "skip"
       }
     ],
     "N0920MF": [
@@ -1888,6 +3298,11 @@
         "week_start": "2026-06-20",
         "score": 0.0,
         "status": "ok"
+      },
+      {
+        "week_start": "2026-06-22",
+        "score": null,
+        "status": "skip"
       }
     ],
     "N0412MF": [
@@ -1895,6 +3310,471 @@
         "week_start": "2026-06-15",
         "score": null,
         "status": "skip"
+      },
+      {
+        "week_start": "2026-03-22",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-23",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-24",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-25",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-26",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-27",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-28",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-29",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-30",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-31",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-01",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-02",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-03",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-04",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-05",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-06",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-07",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-08",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-09",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-10",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-11",
+        "score": 100.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-12",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-13",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-14",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-15",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-16",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-17",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-18",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-19",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-20",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-21",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-22",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-23",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-24",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-25",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-26",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-27",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-28",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-29",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-30",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-01",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-02",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-03",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-04",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-05",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-06",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-07",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-08",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-09",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-10",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-11",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-12",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-13",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-14",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-15",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-16",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-17",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-18",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-19",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-20",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-21",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-22",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-23",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-24",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-25",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-26",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-27",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-28",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-29",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-30",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-31",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-01",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-02",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-03",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-04",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-05",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-06",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-07",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-08",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-09",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-10",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-11",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-12",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-13",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-14",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-15",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-16",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-17",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-18",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-19",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-20",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-21",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-22",
+        "score": 0.0,
+        "status": "ok"
       }
     ],
     "N8528MF": [
@@ -1902,11 +3782,1443 @@
         "week_start": "2026-06-15",
         "score": null,
         "status": "skip"
+      },
+      {
+        "week_start": "2026-06-22",
+        "score": null,
+        "status": "skip"
       }
     ],
     "N7272MD": [
       {
         "week_start": "2026-06-15",
+        "score": null,
+        "status": "skip"
+      },
+      {
+        "week_start": "2026-03-22",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-23",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-24",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-25",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-26",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-27",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-28",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-29",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-30",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-31",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-01",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-02",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-03",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-04",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-05",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-06",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-07",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-08",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-09",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-10",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-11",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-12",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-13",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-14",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-15",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-16",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-17",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-18",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-19",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-20",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-21",
+        "score": 100.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-22",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-23",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-24",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-25",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-26",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-27",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-28",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-29",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-30",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-01",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-02",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-03",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-04",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-05",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-06",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-07",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-08",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-09",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-10",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-11",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-12",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-13",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-14",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-15",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-16",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-17",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-18",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-19",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-20",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-21",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-22",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-23",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-24",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-25",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-26",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-27",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-28",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-29",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-30",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-31",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-01",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-02",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-03",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-04",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-05",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-06",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-07",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-08",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-09",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-10",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-11",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-12",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-13",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-14",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-15",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-16",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-17",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-18",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-19",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-20",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-21",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-22",
+        "score": 0.0,
+        "status": "ok"
+      }
+    ],
+    "N2468MC": [
+      {
+        "week_start": "2026-06-22",
+        "score": null,
+        "status": "skip"
+      }
+    ],
+    "N8883MC": [
+      {
+        "week_start": "2026-03-22",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-23",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-24",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-25",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-26",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-27",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-28",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-29",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-30",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-31",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-01",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-02",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-03",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-04",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-05",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-06",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-07",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-08",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-09",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-10",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-11",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-12",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-13",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-14",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-15",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-16",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-17",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-18",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-19",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-20",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-21",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-22",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-23",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-24",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-25",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-26",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-27",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-28",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-29",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-30",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-01",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-02",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-03",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-04",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-05",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-06",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-07",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-08",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-09",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-10",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-11",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-12",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-13",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-14",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-15",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-16",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-17",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-18",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-19",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-20",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-21",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-22",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-23",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-24",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-25",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-26",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-27",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-28",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-29",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-30",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-31",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-01",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-02",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-03",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-04",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-05",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-06",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-07",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-08",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-09",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-10",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-11",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-12",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-13",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-14",
+        "score": 100.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-15",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-16",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-17",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-18",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-19",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-20",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-21",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-22",
+        "score": 0.0,
+        "status": "ok"
+      }
+    ],
+    "N3181MH": [
+      {
+        "week_start": "2026-03-22",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-23",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-24",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-25",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-26",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-27",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-28",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-29",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-30",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-03-31",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-01",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-02",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-03",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-04",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-05",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-06",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-07",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-08",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-09",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-10",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-11",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-12",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-13",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-14",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-15",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-16",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-17",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-18",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-19",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-20",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-21",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-22",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-23",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-24",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-25",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-26",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-27",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-28",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-29",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-04-30",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-01",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-02",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-03",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-04",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-05",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-06",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-07",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-08",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-09",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-10",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-11",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-12",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-13",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-14",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-15",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-16",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-17",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-18",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-19",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-20",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-21",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-22",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-23",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-24",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-25",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-26",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-27",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-28",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-29",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-30",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-05-31",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-01",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-02",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-03",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-04",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-05",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-06",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-07",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-08",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-09",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-10",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-11",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-12",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-13",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-14",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-15",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-16",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-17",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-18",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-19",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-20",
+        "score": 100.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-21",
+        "score": 0.0,
+        "status": "ok"
+      },
+      {
+        "week_start": "2026-06-22",
+        "score": 0.0,
+        "status": "ok"
+      }
+    ],
+    "N2591MG": [
+      {
+        "week_start": "2026-06-22",
+        "score": null,
+        "status": "skip"
+      }
+    ],
+    "N2469MF": [
+      {
+        "week_start": "2026-06-22",
+        "score": null,
+        "status": "skip"
+      }
+    ],
+    "N3623MH": [
+      {
+        "week_start": "2026-06-22",
         "score": null,
         "status": "skip"
       }
