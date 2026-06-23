@@ -13,6 +13,10 @@ on:
         description: 'PyTrends キャッシュ更新を強制実行（月曜以外でも実行）'
         type: boolean
         default: false
+      force_annict:
+        description: 'Annict アニメ化情報更新を強制実行（月曜以外でも実行）'
+        type: boolean
+        default: false
 
 jobs:
   update:
@@ -50,6 +54,7 @@ jobs:
         run: python scripts/fetch_annict.py
         env:
           ANNICT_API_KEY: ${{ secrets.ANNICT_API_KEY }}
+          FORCE_RUN: ${{ inputs.force_annict }}
 
       - name: 類似度スコア計算・JSON 生成
         run: |
