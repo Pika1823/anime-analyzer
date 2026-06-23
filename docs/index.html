@@ -53,11 +53,13 @@
           <option value="all_hyoka_cnt_latest">評価件数</option>
           <option value="all_point_latest">評価ポイント</option>
           <option value="cumulative_view_latest">総合評価（代替）</option>
+          <option value="monthly_point_latest">月間ポイント</option>
           <option value="impression_cnt_latest">感想件数</option>
           <option value="monthly_rank_latest">月刊順位</option>
           <option value="best_rank_ever">歴代最高順位</option>
         </select>
       </label>
+      <button class="btn btn-secondary btn-sm" id="btn-reset-filters">↺ リセット</button>
       <label>
         ジャンル:
         <select id="filter-genre">
@@ -99,7 +101,7 @@
         </thead>
         <tbody id="ranking-body">
           <tr>
-            <td colspan="6" class="placeholder">データを読み込み中です...</td>
+            <td colspan="7" class="placeholder">データを読み込み中です...</td>
           </tr>
         </tbody>
       </table>
@@ -202,6 +204,23 @@
         </div>
         <input type="range" id="weight-eval" min="0" max="100" step="1" value="33" />
         <span class="weight-val" id="weight-eval-val">33%</span>
+      </div>
+
+      <div class="weight-row">
+        <div class="weight-label-wrap">
+          <label for="weight-monthlyPoint">月間ポイント</label>
+          <span class="weight-hint">直近1ヶ月の評価ポイント（10000ptで満点）</span>
+        </div>
+        <input type="range" id="weight-monthlyPoint" min="0" max="100" step="1" value="0" />
+        <span class="weight-val" id="weight-monthlyPoint-val">0%</span>
+      </div>
+      <div class="weight-row">
+        <div class="weight-label-wrap">
+          <label for="weight-activity">活性スコア</label>
+          <span class="weight-hint">最終更新からの経過日数（30日以内=1.0、1年超=0.0）</span>
+        </div>
+        <input type="range" id="weight-activity" min="0" max="100" step="1" value="0" />
+        <span class="weight-val" id="weight-activity-val">0%</span>
       </div>
 
       <p class="weight-total" id="weight-total">合計: 100%</p>

@@ -15,9 +15,11 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from compute_similarity import (
+    calc_activity_score,
     calc_bm_view_score,
     calc_best_rank_ever,
     calc_eval_score,
+    calc_monthly_point_score,
     calc_pattern1_score,
     calc_rank_score,
     calc_tag_jaccard,
@@ -95,6 +97,51 @@ def test_calc_eval_score_max():
     assert calc_eval_score(50000) == 1.0
 
 
+# --- calc_monthly_point_score ---
+
+def test_calc_monthly_point_score_zero():
+    """月間ポイント 0 は 0.0 を返す。"""
+    assert calc_monthly_point_score(0) == 0.0
+
+
+def test_calc_monthly_point_score_half():
+    """月間ポイント 5000 は 0.5 を返す（10000で満点）。"""
+    assert calc_monthly_point_score(5000) == 0.5
+
+
+def test_calc_monthly_point_score_max():
+    """月間ポイント 10000 以上は 1.0 を返す。"""
+    assert calc_monthly_point_score(10000) == 1.0
+    assert calc_monthly_point_score(20000) == 1.0
+
+
+def test_calc_monthly_point_score_none():
+    """月間ポイント None は 0.0 を返す。"""
+    assert calc_monthly_point_score(None) == 0.0
+
+
+# --- calc_activity_score ---
+
+def test_calc_activity_score_fresh():
+    """最近更新された作品は 1.0 を返す。"""
+    from datetime import date, timedelta
+    recent = (date.today() - timedelta(days=10)).isoformat() + "T00:00:00"
+    assert calc_activity_score(recent) == 1.0
+
+
+def test_calc_activity_score_old():
+    """1年超の未更新作品は 0.0 を返す。"""
+    from datetime import date, timedelta
+    old = (date.today() - timedelta(days=400)).isoformat() + "T00:00:00"
+    assert calc_activity_score(old) == 0.0
+
+
+def test_calc_activity_score_none():
+    """データなし（None / 空文字）は 0.5 を返す。"""
+    assert calc_activity_score(None) == 0.5
+    assert calc_activity_score("") == 0.5
+
+
 def test_calc_eval_score_none():
     """評価件数 None は 0.0 を返す。"""
     assert calc_eval_score(None) == 0.0
@@ -159,7 +206,7 @@ def test_calc_pattern1_score_returns_dict():
         novel_eval_score=0.5,
         anime=anime,
     )
-    expected_keys = {"anime_id", "anime_title", "score", "genre_score", "tag_score", "rank_score", "bm_view_score", "growth_score", "eval_score"}
+    expected_keys = {"anime_id", "anime_title", "score", "genre_score", "tag_score", "rank_score", "bm_view_score", "growth_score", "eval_score", "monthly_point_score", "activity_score"}
     assert expected_keys == set(result.keys())
 
 

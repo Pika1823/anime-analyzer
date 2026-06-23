@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 import math
 import sys
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
@@ -55,12 +55,14 @@ NAROU_GENRE_CATEGORY: dict[str, str] = {
 
 # Pattern1 スコア計算の重みパラメータ（仮説ベース）
 DEFAULT_WEIGHTS: dict[str, float] = {
-    "genre":   0.25,
-    "tag":     0.20,
-    "rank":    0.20,
-    "bm_view": 0.15,
-    "growth":  0.10,
-    "eval":    0.10,  # 評価件数（いいね数代替）スコア
+    "genre":         0.25,
+    "tag":           0.20,
+    "rank":          0.20,
+    "bm_view":       0.15,
+    "growth":        0.10,
+    "eval":          0.10,
+    "monthly_point": 0.0,   # 月間ポイントスコア（データ取得後に調整）
+    "activity":      0.0,   # 活性スコア（最終更新日ベース）
 }
 
 # 出力 JSON ファイルパス（GitHub Pages から参照するため docs/data/ に出力）
@@ -109,13 +111,43 @@ def calc_bm_view_score(bookmark: int | float, cumulative_view: int | float | Non
     return min(1.0, ratio / 0.05)
 
 
-EVAL_SCORE_MAX_CNT: float = 30000.0  # 評価件数スコアの満点閾値
+EVAL_SCORE_MAX_CNT: float = 30000.0   # 評価件数スコアの満点閾値
+MONTHLY_POINT_MAX: float = 10000.0   # 月間ポイントスコアの満点閾値（要チューニング）
 
 def calc_eval_score(all_hyoka_cnt: int | float | None) -> float:
     """評価件数スコアを計算する（30000件で満点）。"""
     if all_hyoka_cnt is None or (isinstance(all_hyoka_cnt, float) and math.isnan(all_hyoka_cnt)):
         return 0.0
     return min(1.0, float(all_hyoka_cnt) / EVAL_SCORE_MAX_CNT)
+
+
+def calc_monthly_point_score(monthly_point: int | float | None) -> float:
+    """月間ポイントスコアを計算する（MONTHLY_POINT_MAX で満点）。"""
+    if monthly_point is None or (isinstance(monthly_point, float) and math.isnan(monthly_point)):
+        return 0.0
+    return min(1.0, float(monthly_point) / MONTHLY_POINT_MAX)
+
+
+def calc_activity_score(general_lastup: str | None) -> float:
+    """最終掲載日からの経過日数で活性スコアを計算する。
+    30日以内=1.0 / 90日=0.7 / 180日=0.4 / 365日=0.1 / 365日超=0.0 / データなし=0.5
+    """
+    if not general_lastup or str(general_lastup) in ("", "nan"):
+        return 0.5
+    try:
+        lastup_dt = datetime.fromisoformat(str(general_lastup))
+        days = (date.today() - lastup_dt.date()).days
+        if days <= 30:
+            return 1.0
+        if days <= 90:
+            return 0.7
+        if days <= 180:
+            return 0.4
+        if days <= 365:
+            return 0.1
+        return 0.0
+    except (ValueError, AttributeError):
+        return 0.5
 
 
 def calc_best_rank_ever(ncode: str, snapshots: pd.DataFrame) -> int | None:
@@ -191,45 +223,42 @@ def calc_pattern1_score(
     novel_growth: float,
     novel_eval_score: float,
     anime: pd.Series,
+    novel_monthly_point_score: float = 0.0,
+    novel_activity_score: float = 0.5,
 ) -> dict:
     """Pattern1 スコアを計算する。各コンポーネントスコアと合計スコアを辞書で返す。"""
-    # ジャンルスコア: 完全一致で 1.0、それ以外は 0.0
-    genre_score = 1.0 if novel_genre_label == str(anime.get("genre_manual", "")) else 0.0
-
-    # タグスコア: Jaccard 係数
-    tag_score = calc_tag_jaccard(novel_tags, str(anime.get("tags_manual", "")))
-
-    # ランクスコア
-    rank_score = calc_rank_score(novel_rank)
-
-    # bm_view スコアはそのまま使用
-    bm_view_score = novel_bm_view_score
-
-    # 成長スコアはそのまま使用
-    growth_score = novel_growth
-
-    # 評価件数スコアはそのまま使用
-    eval_score = novel_eval_score
+    genre_score    = 1.0 if novel_genre_label == str(anime.get("genre_manual", "")) else 0.0
+    tag_score      = calc_tag_jaccard(novel_tags, str(anime.get("tags_manual", "")))
+    rank_score     = calc_rank_score(novel_rank)
+    bm_view_score  = novel_bm_view_score
+    growth_score   = novel_growth
+    eval_score     = novel_eval_score
+    monthly_point_score = novel_monthly_point_score
+    activity_score = novel_activity_score
 
     score = (
-        DEFAULT_WEIGHTS["genre"] * genre_score
-        + DEFAULT_WEIGHTS["tag"] * tag_score
-        + DEFAULT_WEIGHTS["rank"] * rank_score
-        + DEFAULT_WEIGHTS["bm_view"] * bm_view_score
-        + DEFAULT_WEIGHTS["growth"] * growth_score
-        + DEFAULT_WEIGHTS["eval"] * eval_score
+        DEFAULT_WEIGHTS["genre"]         * genre_score
+        + DEFAULT_WEIGHTS["tag"]         * tag_score
+        + DEFAULT_WEIGHTS["rank"]        * rank_score
+        + DEFAULT_WEIGHTS["bm_view"]     * bm_view_score
+        + DEFAULT_WEIGHTS["growth"]      * growth_score
+        + DEFAULT_WEIGHTS["eval"]        * eval_score
+        + DEFAULT_WEIGHTS["monthly_point"] * monthly_point_score
+        + DEFAULT_WEIGHTS["activity"]    * activity_score
     )
 
     return {
-        "anime_id": anime.get("anime_id", ""),
-        "anime_title": anime.get("anime_title", ""),
-        "score": round(score, 4),
-        "genre_score": round(genre_score, 4),
-        "tag_score": round(tag_score, 4),
-        "rank_score": round(rank_score, 4),
-        "bm_view_score": round(bm_view_score, 4),
-        "growth_score": round(growth_score, 4),
-        "eval_score": round(eval_score, 4),
+        "anime_id":            anime.get("anime_id", ""),
+        "anime_title":         anime.get("anime_title", ""),
+        "score":               round(score, 4),
+        "genre_score":         round(genre_score, 4),
+        "tag_score":           round(tag_score, 4),
+        "rank_score":          round(rank_score, 4),
+        "bm_view_score":       round(bm_view_score, 4),
+        "growth_score":        round(growth_score, 4),
+        "eval_score":          round(eval_score, 4),
+        "monthly_point_score": round(monthly_point_score, 4),
+        "activity_score":      round(activity_score, 4),
     }
 
 
@@ -316,6 +345,14 @@ def main() -> None:
         # 過去最高ランク（スナップショットから）
         best_rank_ever = calc_best_rank_ever(ncode, snapshots_df)
 
+        # 月間ポイント・活性スコアを計算
+        monthly_point_val = _nan_to_none(novel.get("monthly_point_latest"))
+        monthly_point_score = calc_monthly_point_score(monthly_point_val)
+        general_lastup_val = novel.get("general_lastup", "")
+        if isinstance(general_lastup_val, float) and math.isnan(general_lastup_val):
+            general_lastup_val = ""
+        activity_score_val = calc_activity_score(str(general_lastup_val) if general_lastup_val else "")
+
         # Pattern1 スコアを計算（アニメ作品の場合は自身の anime_id を除外して比較）
         pattern1_scores: list[dict] = []
         if not narou_anime_df.empty:
@@ -334,6 +371,8 @@ def main() -> None:
                     novel_growth=view_growth_6mo,
                     novel_eval_score=eval_score,
                     anime=anime_row,
+                    novel_monthly_point_score=monthly_point_score,
+                    novel_activity_score=activity_score_val,
                 )
                 pattern1_scores.append(score_dict)
 

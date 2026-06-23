@@ -567,6 +567,71 @@ tbody td {
   white-space: pre-wrap;
 }
 
+/* 小さいボタン（フィルターリセットなど） */
+.btn-sm {
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+/* グラフ表示切り替えバー */
+.graph-toggle-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  background: #fff;
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.graph-toggle-label {
+  font-size: 0.8rem;
+  color: #888;
+  white-space: nowrap;
+  margin-right: 0.25rem;
+}
+
+.graph-toggle-btn {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid #ccc;
+  background: #f5f5f7;
+  color: #555;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.graph-toggle-btn:hover {
+  background: #eee;
+}
+
+.graph-toggle-btn.active {
+  background: #e94560;
+  border-color: #e94560;
+  color: #fff;
+}
+
+/* グラフセクション（非表示切り替え） */
+.graph-section.hidden {
+  display: none;
+}
+
+/* グラフヒントテキスト */
+.graph-hint {
+  font-size: 0.8rem;
+  color: #666;
+  line-height: 1.6;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: #f8f9ff;
+  border-left: 3px solid #b0bec5;
+  border-radius: 0 4px 4px 0;
+}
+
 /* レスポンシブ調整 */
 @media (max-width: 600px) {
   header {
