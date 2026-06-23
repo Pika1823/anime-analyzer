@@ -2,8 +2,9 @@
 なろうAPI から月刊ランキング TOP1000 を取得して novels.csv を upsert する。
 週次実行（月曜のみ）。
 """
+import os
 import time
-from datetime import date
+from datetime import date, datetime
 
 import pandas as pd
 import requests
@@ -29,6 +30,9 @@ NAROU_USER_AGENT = "anime-analyser/1.0"
 # 空レスポンス時のリトライ回数と待機秒数
 NAROU_RETRY_COUNT = 3
 NAROU_RETRY_WAIT_SEC = 10
+# 作品タイプフィルター（環境変数 NAROU_NOVEL_TYPE で上書き可能）
+# 空文字=すべて / "t"=短編 / "r"=連載中 / "er"=完結済連載 / "re"=すべての連載 / "ter"=短編+完結済
+NAROU_NOVEL_TYPE: str = os.environ.get("NAROU_NOVEL_TYPE", "")
 
 
 def fetch_monthly_top(limit: int = NAROU_MAX_COUNT) -> list[dict]:
@@ -51,6 +55,8 @@ def fetch_monthly_top(limit: int = NAROU_MAX_COUNT) -> list[dict]:
             "lim": fetch_count,
             "st": start,
         }
+        if NAROU_NOVEL_TYPE:
+            params["type"] = NAROU_NOVEL_TYPE
         items = None
         for attempt in range(1, NAROU_RETRY_COUNT + 1):
             try:
@@ -96,6 +102,16 @@ def fetch_monthly_top(limit: int = NAROU_MAX_COUNT) -> list[dict]:
     return novels[:limit]
 
 
+def _unix_to_iso(ts) -> str:
+    """Unix タイムスタンプを ISO 8601 文字列に変換する。0 や None は空文字を返す。"""
+    if not ts:
+        return ""
+    try:
+        return datetime.fromtimestamp(int(ts)).isoformat()
+    except (ValueError, OSError):
+        return ""
+
+
 def build_novels_df(raw: list[dict], anime_ncodes: set[str]) -> pd.DataFrame:
     """API レスポンスから novels.csv 用 DataFrame を生成する。
 
@@ -121,13 +137,20 @@ def build_novels_df(raw: list[dict], anime_ncodes: set[str]) -> pd.DataFrame:
                 "is_anime": ncode in anime_ncodes,
                 "anime_id": "",
                 "monthly_rank_latest": rank,
-                "bookmark_count_latest": int(item.get("bookmarkcount") or 0),
+                "bookmark_count_latest": int(item.get("fav_novel_cnt") or item.get("bookmarkcount") or 0),
                 "weekly_unique_latest": int(item.get("weekly_unique") or 0),
+                "length": int(item.get("length") or 0),
+                "global_point_latest": int(item.get("global_point") or 0),
+                "daily_point_latest": int(item.get("daily_point") or 0),
+                "weekly_point_latest": int(item.get("weekly_point") or 0),
+                "monthly_point_latest": int(item.get("monthly_point") or 0),
                 "all_point_latest": int(item.get("all_point") or 0),
                 "all_hyoka_cnt_latest": int(item.get("all_hyoka_cnt") or 0),
                 "impression_cnt_latest": int(item.get("impressioncnt") or 0),
                 "review_cnt_latest": int(item.get("reviewcnt") or 0),
                 "episode_count_latest": int(item.get("general_all_no") or 0),
+                "general_lastup": _unix_to_iso(item.get("general_lastup")),
+                "novel_updated_at": _unix_to_iso(item.get("novelupdated_at")),
                 "updated_at": today,
             }
         )
