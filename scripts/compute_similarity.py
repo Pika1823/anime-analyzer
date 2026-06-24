@@ -321,7 +321,7 @@ def calc_pattern1_score(
     monthly_point_score = novel_monthly_point_score
     activity_score = novel_activity_score
 
-    score = (
+    raw_score = (
         DEFAULT_WEIGHTS["genre"]           * genre_score
         + DEFAULT_WEIGHTS["tag"]           * tag_score
         + DEFAULT_WEIGHTS["rank"]          * rank_score
@@ -331,6 +331,9 @@ def calc_pattern1_score(
         + DEFAULT_WEIGHTS["monthly_point"] * monthly_point_score
         + DEFAULT_WEIGHTS["activity"]      * activity_score
     )
+    # 0 でない重みの総和で割ることで 0〜100 に正規化（genre/tag=0 でも最大値が変わらない）
+    total_weight = sum(v for v in DEFAULT_WEIGHTS.values() if v > 0)
+    score = raw_score / total_weight if total_weight > 0 else 0.0
 
     return {
         "anime_id":            anime.get("anime_id", ""),
@@ -578,8 +581,11 @@ def main() -> None:
         anime_records.append({
             "anime_id": str(anime_row.get("anime_id", "")),
             "anime_title": str(anime_row.get("anime_title", "")),
+            "ncode": _nan_to_none(anime_row.get("ncode")),
             "source_type": str(anime_row.get("source_type", "")),
             "air_date": _nan_to_none(anime_row.get("air_date")),
+            "announce_date": _nan_to_none(anime_row.get("announce_date")),
+            "novel_publish_date": _nan_to_none(anime_row.get("novel_publish_date")),
             "genre_manual": _nan_to_none(anime_row.get("genre_manual")),
             "tags_manual": _nan_to_none(anime_row.get("tags_manual")),
         })

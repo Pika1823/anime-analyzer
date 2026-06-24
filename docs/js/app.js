@@ -5,7 +5,7 @@ let novelsData = null;
 let trendsData = null;
 let snapshotsData = null;
 let selectedNcode = null;
-let currentWeights = { genre: 22, tag: 18, rank: 17, bmView: 13, growth: 8, eval: 7, monthlyPoint: 10, activity: 5 };
+let currentWeights = { genre: 0, tag: 0, rank: 17, bmView: 13, growth: 8, eval: 7, monthlyPoint: 10, activity: 5 };
 
 // ページネーション
 let currentPage = 0;
@@ -128,7 +128,7 @@ const CORR_AXIS_OPTIONS = [
   { key: 'growth_all_point_30d_rate',      label: '評価ポイント 30日増加率(%)' },
 ];
 
-const DEFAULT_WEIGHTS = { genre: 22, tag: 18, rank: 17, bmView: 13, growth: 8, eval: 7, monthlyPoint: 10, activity: 5 };
+const DEFAULT_WEIGHTS = { genre: 0, tag: 0, rank: 17, bmView: 13, growth: 8, eval: 7, monthlyPoint: 10, activity: 5 };
 const LS_KEY = 'animeTool.weights';
 
 // ---- データ読み込み ----
@@ -171,6 +171,7 @@ async function loadData() {
   initGrowthCorrSelects();
   renderGrowthTab();
   renderBooksTab();
+  // タイムライン・分析タブはタブ切り替え時に初期化（データが重いため遅延）
 }
 
 function showLoading() {
@@ -1681,6 +1682,406 @@ function switchTab(tabId) {
     panel.classList.toggle('active', panel.id === `tab-${tabId}`);
   });
   if (tabId === 'books') renderBooksTab();
+  if (tabId === 'timeline') renderTimelineTab();
+  if (tabId === 'analysis') renderAnalysisTab();
+}
+
+// ---- タイムライン分析タブ ----
+let timelineChart = null;
+
+function renderTimelineTab() {
+  if (!novelsData) return;
+
+  // アニメ化済み作品のドロップダウンを構築
+  const select = document.getElementById('timeline-anime-select');
+  if (!select) return;
+
+  const animeWorks = novelsData.anime_works || [];
+  const currentVal = select.value;
+
+  // 既存オプションを保持しつつ未追加のものだけ追加
+  if (select.options.length <= 1) {
+    animeWorks
+      .filter((a) => a.ncode)
+      .sort((a, b) => a.anime_title.localeCompare(b.anime_title))
+      .forEach((a) => {
+        const opt = document.createElement('option');
+        opt.value = a.anime_id;
+        opt.textContent = a.anime_title;
+        select.appendChild(opt);
+      });
+    if (currentVal) select.value = currentVal;
+  }
+
+  if (select.value) {
+    renderTimelineChart(select.value);
+  }
+}
+
+function renderTimelineChart(animeId) {
+  const titleEl = document.getElementById('timeline-chart-title');
+  const hintEl = document.getElementById('timeline-hint');
+  const legendEl = document.getElementById('timeline-event-legend');
+  const similarCard = document.getElementById('timeline-similar-card');
+  const ctx = document.getElementById('timeline-chart');
+  if (!ctx || !novelsData || !snapshotsData) return;
+
+  if (timelineChart) { timelineChart.destroy(); timelineChart = null; }
+
+  const animeWorks = novelsData.anime_works || [];
+  const animeInfo = animeWorks.find((a) => a.anime_id === animeId);
+  if (!animeInfo) return;
+
+  const metric = document.getElementById('timeline-metric')?.value || 'monthly_rank';
+  const ncode = animeInfo.ncode;
+
+  if (titleEl) titleEl.textContent = `${animeInfo.anime_title} — ランク推移`;
+
+  const METRIC_LABELS = {
+    monthly_rank: '月刊順位',
+    all_hyoka_cnt: '評価件数',
+    bookmark_count: 'ブックマーク数',
+  };
+
+  // スナップショットデータを取得
+  const snaps = ncode ? (snapshotsData.snapshots[ncode] || []) : [];
+  const sortedSnaps = [...snaps].sort((a, b) => a.date.localeCompare(b.date));
+
+  if (sortedSnaps.length === 0) {
+    ctx.closest('.card').querySelector('.graph-hint').textContent =
+      '📭 このncode のスナップショットデータがありません。Wayback Machine バックフィルを実行してください。';
+    if (legendEl) legendEl.innerHTML = '';
+    return;
+  }
+
+  const labels = sortedSnaps.map((s) => s.date);
+  const values = sortedSnaps.map((s) => {
+    const v = s[metric];
+    return v != null ? v : null;
+  });
+
+  // イベントマーカー設定
+  const EVENT_CONFIGS = [
+    { key: 'novel_publish_date', label: '📚 書籍化1巻', color: '#2e7d32' },
+    { key: 'announce_date',      label: '📢 アニメ発表', color: '#e65100' },
+    { key: 'air_date',           label: '🎬 放映開始',  color: '#b71c1c' },
+  ];
+
+  const eventLines = [];
+  const legendItems = [];
+
+  EVENT_CONFIGS.forEach(({ key, label, color }) => {
+    const dateStr = animeInfo[key];
+    if (!dateStr) return;
+    // 完全一致を先に探し、なければ最も近い日付を探す
+    let xIdx = labels.indexOf(dateStr);
+    if (xIdx < 0) {
+      let minDiff = Infinity;
+      labels.forEach((d, i) => {
+        const diff = Math.abs(new Date(d) - new Date(dateStr));
+        if (diff < minDiff) { minDiff = diff; xIdx = i; }
+      });
+    }
+    if (xIdx < 0) return;
+    eventLines.push({ xIdx, label, color });
+    legendItems.push({ label, color });
+  });
+
+  // イベント凡例を更新
+  if (legendEl) {
+    legendEl.innerHTML = legendItems.map((item) =>
+      `<span class="legend-item"><span class="legend-line" style="background:${item.color};"></span>${escHtml(item.label)}</span>`
+    ).join('');
+  }
+
+  const isRank = metric === 'monthly_rank';
+
+  // 縦線をカスタムプラグインで描画
+  const verticalLinesPlugin = {
+    id: 'timelineVerticalLines',
+    afterDraw(chart) {
+      const { ctx, chartArea: { top, bottom }, scales } = chart;
+      eventLines.forEach(({ xIdx, color }) => {
+        const x = scales.x.getPixelForValue(xIdx);
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(x, top);
+        ctx.lineTo(x, bottom);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 4]);
+        ctx.stroke();
+        ctx.restore();
+      });
+    },
+  };
+
+  timelineChart = new Chart(ctx, {
+    type: 'line',
+    plugins: [verticalLinesPlugin],
+    data: {
+      labels,
+      datasets: [
+        {
+          label: METRIC_LABELS[metric] || metric,
+          data: values,
+          borderColor: '#0f3460',
+          backgroundColor: 'rgba(15,52,96,0.1)',
+          tension: 0.3,
+          fill: false,
+          pointRadius: 3,
+          pointHoverRadius: 6,
+          spanGaps: true,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          ticks: { maxTicksLimit: 12, maxRotation: 45 },
+        },
+        y: {
+          reverse: isRank,
+          title: {
+            display: true,
+            text: isRank ? '月刊順位（上位ほど良）' : (METRIC_LABELS[metric] || metric),
+          },
+        },
+      },
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: {
+          callbacks: {
+            label: (c) => {
+              const v = c.parsed.y;
+              return v != null ? `${c.dataset.label}: ${v.toLocaleString()}` : null;
+            },
+          },
+        },
+      },
+    },
+  });
+
+  // 似た軌跡の未アニメ作品を検索
+  renderTimelineSimilar(animeId, animeInfo, metric);
+}
+
+function renderTimelineSimilar(animeId, animeInfo, metric) {
+  const card = document.getElementById('timeline-similar-card');
+  const head = document.getElementById('timeline-similar-head');
+  const body = document.getElementById('timeline-similar-body');
+  const titleEl = document.getElementById('timeline-similar-title');
+  if (!card || !head || !body || !novelsData) return;
+
+  // 最新スコアベースで選択アニメに最も似た未アニメ作品上位10件を表示
+  const nonAnime = novelsData.novels.filter((n) => !n.is_anime);
+  const withScore = nonAnime.map((n) => {
+    const bestEntry = (n.pattern1_scores || []).find((e) => e.anime_id === animeId);
+    const score = bestEntry ? bestEntry.score : 0;
+    return { ...n, _targetScore: score };
+  });
+  withScore.sort((a, b) => b._targetScore - a._targetScore);
+  const top10 = withScore.slice(0, 10);
+
+  if (titleEl) titleEl.textContent = `${animeInfo.anime_title} に最も似た未アニメ化作品 TOP10（現在スコア）`;
+
+  head.innerHTML = `<tr>
+    <th>順位</th>
+    <th>タイトル</th>
+    <th>類似スコア</th>
+    <th>ブックマーク</th>
+    <th>評価件数</th>
+  </tr>`;
+
+  body.innerHTML = top10.map((n, i) => `<tr>
+    <td>${i + 1}</td>
+    <td>${escHtml(n.title)}${n.is_book ? ' <span class="book-badge">書籍化</span>' : ''}</td>
+    <td style="text-align:right;font-weight:600;">${n._targetScore.toFixed(1)}</td>
+    <td style="text-align:right;">${n.bookmark_count_latest != null ? n.bookmark_count_latest.toLocaleString() : '—'}</td>
+    <td style="text-align:right;">${n.all_hyoka_cnt_latest != null ? n.all_hyoka_cnt_latest.toLocaleString() : '—'}</td>
+  </tr>`).join('') || '<tr><td colspan="5" class="placeholder">データなし</td></tr>';
+
+  card.style.display = '';
+}
+
+// ---- 多次元分析タブ ----
+let analysisScatterChart = null;
+
+const ANALYSIS_AXIS_LABELS = {
+  bookmark_count_latest: 'ブックマーク数',
+  all_hyoka_cnt_latest: '評価件数',
+  all_point_latest: '累計評価ポイント',
+  global_point_latest: '総合評価ポイント',
+  monthly_point_latest: '月間ポイント',
+};
+
+function renderAnalysisTab() {
+  if (!novelsData) return;
+  renderAnalysisScatter();
+}
+
+function renderAnalysisScatter() {
+  const ctx = document.getElementById('analysis-scatter-chart')?.getContext('2d');
+  if (!ctx || !novelsData) return;
+
+  if (analysisScatterChart) { analysisScatterChart.destroy(); analysisScatterChart = null; }
+
+  const xKey = document.getElementById('analysis-x-axis')?.value || 'bookmark_count_latest';
+  const yKey = document.getElementById('analysis-y-axis')?.value || 'all_hyoka_cnt_latest';
+  const useLog = document.getElementById('analysis-log-scale')?.checked ?? true;
+
+  const novels = novelsData.novels;
+
+  // データセット別に分類：アニメ化済み / 書籍化済み未アニメ / その他未アニメ
+  const animePoints = [];
+  const bookPoints = [];
+  const otherPoints = [];
+
+  novels.forEach((n) => {
+    const xv = n[xKey];
+    const yv = n[yKey];
+    if (xv == null || yv == null || xv <= 0 || yv <= 0) return;
+
+    const xVal = useLog ? Math.log10(xv) : xv;
+    const yVal = useLog ? Math.log10(yv) : yv;
+
+    const point = {
+      x: xVal,
+      y: yVal,
+      _raw_x: xv,
+      _raw_y: yv,
+      _title: n.title,
+      _score: n.pattern1_best_score != null ? (n.pattern1_best_score * 100).toFixed(1) : '—',
+      _bestAnime: n.pattern1_scores?.[0]?.anime_title || '—',
+      _ncode: n.ncode,
+      _isAnime: n.is_anime,
+      _isBook: n.is_book,
+    };
+
+    if (n.is_anime) animePoints.push(point);
+    else if (n.is_book) bookPoints.push(point);
+    else otherPoints.push(point);
+  });
+
+  const xLabel = ANALYSIS_AXIS_LABELS[xKey] || xKey;
+  const yLabel = ANALYSIS_AXIS_LABELS[yKey] || yKey;
+
+  analysisScatterChart = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [
+        {
+          label: '未アニメ化（その他）',
+          data: otherPoints,
+          backgroundColor: 'rgba(136,136,136,0.4)',
+          pointRadius: 4,
+          pointHoverRadius: 7,
+        },
+        {
+          label: '書籍化済み（未アニメ）',
+          data: bookPoints,
+          backgroundColor: 'rgba(233,69,96,0.6)',
+          pointRadius: 5,
+          pointHoverRadius: 8,
+        },
+        {
+          label: 'アニメ化済み',
+          data: animePoints,
+          backgroundColor: 'rgba(15,52,96,0.75)',
+          pointRadius: 7,
+          pointHoverRadius: 10,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: useLog ? `${xLabel}（log₁₀）` : xLabel,
+          },
+          ticks: {
+            callback: useLog ? (v) => `10^${v.toFixed(1)}` : undefined,
+          },
+        },
+        y: {
+          title: {
+            display: true,
+            text: useLog ? `${yLabel}（log₁₀）` : yLabel,
+          },
+          ticks: {
+            callback: useLog ? (v) => `10^${v.toFixed(1)}` : undefined,
+          },
+        },
+      },
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: {
+          callbacks: {
+            label: (item) => {
+              const p = item.raw;
+              return [
+                p._title,
+                `${xLabel}: ${p._raw_x.toLocaleString()}`,
+                `${yLabel}: ${p._raw_y.toLocaleString()}`,
+                `類似スコア: ${p._score}（${p._bestAnime}）`,
+              ];
+            },
+          },
+        },
+      },
+      onClick: (_evt, elements) => {
+        if (elements.length === 0) return;
+        const point = elements[0].element.$context.raw;
+        renderAnalysisDetail(point._ncode);
+      },
+    },
+  });
+}
+
+function renderAnalysisDetail(ncode) {
+  const content = document.getElementById('analysis-detail-content');
+  if (!content || !novelsData) return;
+
+  const novel = novelsData.novels.find((n) => n.ncode === ncode);
+  if (!novel) return;
+
+  const badge = novel.is_anime
+    ? '<span class="anime-badge">アニメ化済み</span>'
+    : novel.is_book
+    ? '<span class="book-badge">書籍化済み</span>'
+    : '';
+
+  const score = novel.pattern1_best_score != null
+    ? novel.pattern1_best_score.toFixed(1)
+    : '—';
+  const bestAnime = novel.pattern1_scores?.[0]?.anime_title || '—';
+
+  const fmt = (v) => (v != null ? v.toLocaleString() : '—');
+
+  content.innerHTML = `
+    <p style="font-weight:700;margin-bottom:0.5rem;">${escHtml(novel.title)} ${badge}</p>
+    <div class="analysis-detail-meta">
+      <strong>ジャンル:</strong> ${escHtml(novel.genre_label || '—')}<br>
+      <strong>ブックマーク:</strong> ${fmt(novel.bookmark_count_latest)}<br>
+      <strong>評価件数:</strong> ${fmt(novel.all_hyoka_cnt_latest)}<br>
+      <strong>累計評価ポイント:</strong> ${fmt(novel.all_point_latest)}<br>
+      <strong>総合評価ポイント:</strong> ${fmt(novel.global_point_latest)}<br>
+      <strong>月間ポイント:</strong> ${fmt(novel.monthly_point_latest)}<br>
+      <strong>月刊順位:</strong> ${fmt(novel.monthly_rank_latest)}位
+    </div>
+    <div class="analysis-detail-score">
+      <div>類似スコア <span class="score-num">${score}</span></div>
+      <div style="font-size:0.75rem;color:#555;margin-top:0.25rem;">最類似アニメ: ${escHtml(bestAnime)}</div>
+    </div>
+    <div style="margin-top:0.75rem;">
+      <a class="novel-link" href="https://ncode.syosetu.com/${encodeURIComponent(novel.ncode || '')}/" target="_blank" rel="noopener">なろうで読む →</a>
+    </div>
+  `;
 }
 
 // ---- ユーティリティ ----
@@ -1800,6 +2201,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('corr-x-axis')?.addEventListener('change', renderCorrelationChart);
   document.getElementById('corr-y-axis')?.addEventListener('change', renderCorrelationChart);
+
+  // タイムラインタブのコントロール
+  document.getElementById('timeline-anime-select')?.addEventListener('change', (e) => {
+    if (e.target.value) renderTimelineChart(e.target.value);
+  });
+  document.getElementById('timeline-metric')?.addEventListener('change', () => {
+    const sel = document.getElementById('timeline-anime-select');
+    if (sel?.value) renderTimelineChart(sel.value);
+  });
+
+  // 分析タブのコントロール
+  document.getElementById('analysis-x-axis')?.addEventListener('change', renderAnalysisScatter);
+  document.getElementById('analysis-y-axis')?.addEventListener('change', renderAnalysisScatter);
+  document.getElementById('analysis-log-scale')?.addEventListener('change', renderAnalysisScatter);
 
   const infoToggle = document.getElementById('info-toggle');
   const infoBody = document.getElementById('info-body');

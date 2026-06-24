@@ -779,6 +779,96 @@ tbody td {
   }
 }
 
+/* タイムライン分析タブ */
+.timeline-event-legend {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+  font-size: 0.8rem;
+}
+
+.timeline-event-legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.timeline-event-legend .legend-line {
+  width: 24px;
+  height: 3px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+/* 多次元分析タブ */
+.analysis-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.analysis-scatter-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  margin-bottom: 0.75rem;
+  color: #555;
+  flex-wrap: wrap;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+#analysis-detail-card {
+  position: sticky;
+  top: 1rem;
+}
+
+.analysis-detail-meta {
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+  line-height: 1.7;
+}
+
+.analysis-detail-meta strong {
+  color: #1a1a2e;
+}
+
+.analysis-detail-score {
+  background: #f0f4ff;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+}
+
+.analysis-detail-score .score-num {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f3460;
+}
+
+/* レスポンシブ調整 */
+@media (max-width: 1100px) {
+  .analysis-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .book-analysis-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 600px) {
   header {
     flex-direction: column;

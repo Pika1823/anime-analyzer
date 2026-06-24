@@ -18,6 +18,8 @@
     <button class="tab-btn" data-tab="trends">Trends 比較</button>
     <button class="tab-btn" data-tab="growth">📈 成長分析</button>
     <button class="tab-btn" data-tab="books">📚 書籍分析</button>
+    <button class="tab-btn" data-tab="timeline">📅 タイムライン</button>
+    <button class="tab-btn" data-tab="analysis">🔍 分析</button>
     <button class="tab-btn" data-tab="settings">⚙ 設定</button>
   </nav>
 </header>
@@ -257,6 +259,97 @@
               <tr><td colspan="5" class="placeholder">書籍化フラグ済みの作品データがありません。</td></tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tab: タイムライン分析 -->
+  <section id="tab-timeline" class="tab-panel">
+    <h2 class="section-title">📅 アニメ化タイムライン分析</h2>
+
+    <div class="filter-bar">
+      <label>アニメ作品:
+        <select id="timeline-anime-select">
+          <option value="">作品を選択してください</option>
+        </select>
+      </label>
+      <label>表示指標:
+        <select id="timeline-metric">
+          <option value="monthly_rank">月刊順位</option>
+          <option value="all_hyoka_cnt">評価件数</option>
+          <option value="bookmark_count">ブックマーク数</option>
+        </select>
+      </label>
+    </div>
+
+    <!-- タイムラインチャート -->
+    <div class="card" id="timeline-chart-card">
+      <h4 class="chart-title" id="timeline-chart-title">作品を選択するとランク推移が表示されます</h4>
+      <div class="timeline-event-legend" id="timeline-event-legend"></div>
+      <div class="chart-container" style="height:380px;"><canvas id="timeline-chart"></canvas></div>
+      <p class="graph-hint" id="timeline-hint">💡 アニメ化前のなろう掲載期間から放映後までの月刊順位推移を表示します。Wayback Machine バックフィルを実行すると過去データが追加されます。</p>
+    </div>
+
+    <!-- 類似軌跡の未アニメ作品 -->
+    <div class="card" id="timeline-similar-card" style="display:none;">
+      <h4 class="chart-title" id="timeline-similar-title">似た軌跡の未アニメ化作品</h4>
+      <div class="table-wrap">
+        <table>
+          <thead id="timeline-similar-head"></thead>
+          <tbody id="timeline-similar-body">
+            <tr><td colspan="5" class="placeholder">作品を選択してください</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tab: 多次元分析 -->
+  <section id="tab-analysis" class="tab-panel">
+    <h2 class="section-title">🔍 多次元分析（現在データ比較）</h2>
+
+    <div class="filter-bar">
+      <label>X軸:
+        <select id="analysis-x-axis">
+          <option value="bookmark_count_latest">ブックマーク数</option>
+          <option value="all_hyoka_cnt_latest">評価件数</option>
+          <option value="all_point_latest">累計評価ポイント</option>
+          <option value="global_point_latest">総合評価ポイント</option>
+          <option value="monthly_point_latest">月間ポイント</option>
+        </select>
+      </label>
+      <label>Y軸:
+        <select id="analysis-y-axis">
+          <option value="all_hyoka_cnt_latest">評価件数</option>
+          <option value="bookmark_count_latest">ブックマーク数</option>
+          <option value="all_point_latest">累計評価ポイント</option>
+          <option value="global_point_latest">総合評価ポイント</option>
+          <option value="monthly_point_latest">月間ポイント</option>
+        </select>
+      </label>
+      <label class="filter-check">
+        <input type="checkbox" id="analysis-log-scale" checked />
+        対数スケール
+      </label>
+    </div>
+
+    <div class="analysis-grid">
+      <div class="card">
+        <h4 class="chart-title">作品分布 散布図</h4>
+        <div class="analysis-scatter-legend">
+          <span class="legend-dot" style="background:#0f3460;"></span> アニメ化済み
+          <span class="legend-dot" style="background:#888;margin-left:1rem;"></span> 未アニメ化
+          <span class="legend-dot" style="background:#e94560;margin-left:1rem;"></span> 書籍化済み（未アニメ）
+        </div>
+        <div class="chart-container" style="height:460px;"><canvas id="analysis-scatter-chart"></canvas></div>
+        <p class="graph-hint">💡 アニメ化済み作品（青）と未アニメ化作品（灰）の分布を比較します。右上に近いほど評価・人気が高い作品です。点をクリックすると詳細が表示されます。</p>
+      </div>
+
+      <div class="card" id="analysis-detail-card">
+        <h4 class="chart-title">選択中の作品</h4>
+        <div id="analysis-detail-content">
+          <p class="placeholder">散布図の点をクリックしてください</p>
         </div>
       </div>
     </div>

@@ -1,0 +1,53 @@
+name: Wayback Machine バックフィル（手動）
+
+on:
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: '取得開始日（YYYY-MM-DD）'
+        required: false
+        default: '2020-01-01'
+      end_date:
+        description: '取得終了日（YYYY-MM-DD、空欄で今日）'
+        required: false
+        default: ''
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 依存ライブラリのインストール
+        run: pip install -r scripts/requirements.txt
+
+      - name: Wayback Machine バックフィル実行
+        run: |
+          END_DATE="${{ inputs.end_date }}"
+          if [ -z "$END_DATE" ]; then
+            END_DATE=$(date '+%Y-%m-%d')
+          fi
+          python scripts/backfill_wayback.py \
+            --start "${{ inputs.start_date }}" \
+            --end "$END_DATE"
+
+      - name: 類似度スコア再計算・JSON 生成
+        run: python scripts/compute_similarity.py
+
+      - name: 変更をコミット・プッシュ
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/ docs/
+          git diff --staged --quiet || git commit -m "chore: Wayback Machine バックフィル ${{ inputs.start_date }} 〜 ${{ inputs.end_date || '今日' }}"
+          git pull --rebase origin main
+          git push
