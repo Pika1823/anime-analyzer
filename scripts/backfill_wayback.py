@@ -21,16 +21,62 @@ logger = get_logger(__name__)
 CDX_API_URL = "https://web.archive.org/cdx/search/cdx"
 NAROU_RANKING_URL = "https://yomou.syosetu.com/rank/list/type/monthly_total/"
 # アーカイブ取得後のスリープ秒数（Wayback Machine のレート制限対策）
-WAYBACK_SLEEP_SEC = 3
-# SSL エラー時のリトライ設定（指数バックオフ: 10秒, 20秒, 40秒）
-FETCH_RETRY_MAX = 3
-FETCH_RETRY_SLEEP_BASE = 10
+WAYBACK_SLEEP_SEC = 5
+# リトライ設定（503/429 等の一時エラー用）
+FETCH_RETRY_MAX = 5
+FETCH_RETRY_SLEEP_BASE = 30  # CDX API 用の初期待機秒数（503 多発のため長めに設定）
+HTML_RETRY_SLEEP_BASE = 10   # アーカイブ HTML 取得用の初期待機秒数
+# 一時エラーとみなすHTTPステータスコード（リトライ対象）
+RETRYABLE_STATUS = {429, 500, 502, 503, 504}
+
+
+def _request_with_retry(
+    url: str,
+    params: dict | None = None,
+    sleep_base: int = FETCH_RETRY_SLEEP_BASE,
+    max_retry: int = FETCH_RETRY_MAX,
+    label: str = "",
+) -> requests.Response | None:
+    """HTTP GET を実行し、一時エラー時は指数バックオフでリトライする。
+    最大リトライ回数を超えた場合は None を返す（致命エラーにしない）。
+    """
+    for attempt in range(max_retry):
+        try:
+            resp = requests.get(url, params=params, timeout=60)
+            if resp.status_code in RETRYABLE_STATUS:
+                wait = sleep_base * (2 ** attempt)
+                logger.warning(
+                    "%s HTTP %d (試行 %d/%d)、%d 秒後リトライ",
+                    label or url[:60], resp.status_code, attempt + 1, max_retry, wait,
+                )
+                time.sleep(wait)
+                continue
+            resp.raise_for_status()
+            return resp
+        except requests.exceptions.SSLError as e:
+            wait = sleep_base * (2 ** attempt)
+            if attempt < max_retry - 1:
+                logger.warning(
+                    "%s SSL エラー (試行 %d/%d)、%d 秒後リトライ: %s",
+                    label or url[:60], attempt + 1, max_retry, wait, e,
+                )
+                time.sleep(wait)
+            else:
+                logger.warning("%s SSL エラー（リトライ上限）: %s", label or url[:60], e)
+                return None
+        except requests.exceptions.RequestException as e:
+            logger.warning("%s リクエストエラー: %s", label or url[:60], e)
+            return None
+    logger.warning("%s リトライ上限到達、スキップ", label or url[:60])
+    return None
 
 
 def list_archive_urls(start: date, end: date) -> list[dict]:
-    """Wayback Machine CDX API でアーカイブ URL 一覧を取得する。"""
+    """Wayback Machine CDX API でアーカイブ URL 一覧を取得する。
+    503 等の一時エラーはリトライし、失敗した場合は空リストを返す。
+    """
     results: list[dict] = []
-    params = {
+    params: dict = {
         "url": NAROU_RANKING_URL,
         "output": "json",
         "fl": "timestamp,original",
@@ -40,9 +86,20 @@ def list_archive_urls(start: date, end: date) -> list[dict]:
         "limit": 500,
     }
     while True:
-        resp = requests.get(CDX_API_URL, params=params, timeout=60)
-        resp.raise_for_status()
-        data = resp.json()
+        resp = _request_with_retry(
+            CDX_API_URL,
+            params=params,
+            sleep_base=FETCH_RETRY_SLEEP_BASE,
+            label="CDX API",
+        )
+        if resp is None:
+            logger.warning("CDX API の取得に失敗しました。部分的な結果 %d 件で続行します", len(results))
+            break
+        try:
+            data = resp.json()
+        except ValueError:
+            logger.warning("CDX API レスポンスが JSON でありません、終了します")
+            break
         if not isinstance(data, list) or len(data) <= 1:
             break
         # 先頭行はヘッダー ["timestamp", "original"]（または resumeKey 行）
@@ -68,35 +125,22 @@ def list_archive_urls(start: date, end: date) -> list[dict]:
         except ValueError:
             logger.warning("タイムスタンプのパース失敗: %s、ページネーションを終了", last_ts)
             break
+        time.sleep(2)  # ページ間のレート制限対策
     logger.info("アーカイブ一覧取得完了: %d 件", len(results))
     return results
 
 
 def fetch_archive_html(timestamp: str) -> str | None:
-    """Wayback Machine からアーカイブ HTML を取得する。SSL エラー時は指数バックオフでリトライ。"""
+    """Wayback Machine からアーカイブ HTML を取得する。503/SSL エラー時は指数バックオフでリトライ。"""
     url = f"https://web.archive.org/web/{timestamp}/{NAROU_RANKING_URL}"
-
-    for attempt in range(FETCH_RETRY_MAX):
-        try:
-            resp = requests.get(url, timeout=60)
-            resp.raise_for_status()
-            return resp.text
-        except requests.exceptions.SSLError as e:
-            if attempt < FETCH_RETRY_MAX - 1:
-                wait = FETCH_RETRY_SLEEP_BASE * (2 ** attempt)
-                logger.warning(
-                    "アーカイブ取得 SSL エラー timestamp=%s (試行 %d/%d)、%d 秒後リトライ: %s",
-                    timestamp, attempt + 1, FETCH_RETRY_MAX, wait, e,
-                )
-                time.sleep(wait)
-            else:
-                logger.warning("アーカイブ取得失敗 timestamp=%s: %s", timestamp, e)
-                return None
-        except Exception as e:
-            logger.warning("アーカイブ取得失敗 timestamp=%s: %s", timestamp, e)
-            return None
-
-    return None
+    resp = _request_with_retry(
+        url,
+        sleep_base=HTML_RETRY_SLEEP_BASE,
+        label=f"アーカイブ timestamp={timestamp}",
+    )
+    if resp is None:
+        return None
+    return resp.text
 
 
 def parse_ranking_html(html: str, snapshot_date: str) -> list[dict]:
