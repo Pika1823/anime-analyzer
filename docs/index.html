@@ -437,6 +437,41 @@
       <button class="btn btn-primary" id="btn-apply-weights">適用してランキングを更新</button>
       <button class="btn btn-secondary" id="btn-reset-weights">デフォルトに戻す</button>
     </div>
+
+    <!-- スコア基準値（満点の閾値）設定 -->
+    <h2 class="section-title" style="margin-top:2.5rem;">スコア基準値（満点の閾値）</h2>
+    <p class="settings-desc">
+      毎日の自動実行でデータから算出した値を初期値としています。変更するとブラウザ内でスコアが再計算されます。<br>
+      <strong>ファイルへの書き戻しはしません</strong>（ブラウザに保存・「ファイルの値に戻す」でリセット可能）。
+    </p>
+    <div class="settings-card">
+      <div class="norm-row">
+        <div class="norm-label-wrap">
+          <label>BM/View比率 満点基準</label>
+          <span class="norm-hint">ブックマーク÷総閲覧数がこの値以上で満点（100点）</span>
+        </div>
+        <input type="number" id="norm-bm-view" step="0.001" min="0.001" max="1">
+        <span class="norm-file-val" id="norm-bm-view-file">ファイル値: —</span>
+      </div>
+      <div class="norm-row">
+        <div class="norm-label-wrap">
+          <label>評価件数 満点基準（件）</label>
+          <span class="norm-hint">累計評価件数がこの値以上で満点（100点）</span>
+        </div>
+        <input type="number" id="norm-eval" step="100" min="100">
+        <span class="norm-file-val" id="norm-eval-file">ファイル値: —</span>
+      </div>
+      <div class="norm-row">
+        <div class="norm-label-wrap">
+          <label>月間ポイント 満点基準（pt）</label>
+          <span class="norm-hint">直近1ヶ月ポイントがこの値以上で満点（100点）</span>
+        </div>
+        <input type="number" id="norm-monthly-point" step="100" min="100">
+        <span class="norm-file-val" id="norm-monthly-point-file">ファイル値: —</span>
+      </div>
+      <button class="btn btn-primary" id="btn-apply-norm-params">適用してスコアを再計算</button>
+      <button class="btn btn-secondary" id="btn-reset-norm-params">ファイルの値に戻す</button>
+    </div>
   </section>
 
 </main>

@@ -7,6 +7,11 @@ let snapshotsData = null;
 let selectedNcode = null;
 let currentWeights = { genre: 0, tag: 0, rank: 17, bmView: 13, growth: 8, eval: 7, monthlyPoint: 10, activity: 5 };
 
+// norm_params 管理（満点基準値）
+let fileNormParams = null;    // norm_params.json から読み込んだファイルデフォルト
+let currentNormParams = null; // 現在有効な基準値（localStorage 優先）
+const LS_NORM_KEY = 'animeTool.normParams';
+
 // ページネーション
 let currentPage = 0;
 const PAGE_SIZE = 100;
@@ -135,10 +140,11 @@ const LS_KEY = 'animeTool.weights';
 async function loadData() {
   showLoading();
   try {
-    const [novelsRes, trendsRes, snapshotsRes] = await Promise.allSettled([
+    const [novelsRes, trendsRes, snapshotsRes, normRes] = await Promise.allSettled([
       fetch('./data/novels_merged.json'),
       fetch('./data/trends_merged.json'),
       fetch('./data/snapshots_merged.json'),
+      fetch('./data/norm_params.json'),
     ]);
 
     if (novelsRes.status === 'fulfilled' && novelsRes.value.ok) {
@@ -158,13 +164,22 @@ async function loadData() {
     } else {
       snapshotsData = null;
     }
+
+    if (normRes.status === 'fulfilled' && normRes.value.ok) {
+      fileNormParams = await normRes.value.json();
+    } else {
+      fileNormParams = null;
+    }
   } catch (_) {
     novelsData = null;
     trendsData = null;
+    fileNormParams = null;
   }
 
   visibleGraphs = loadVisibleGraphs();
   currentWeights = loadWeights();
+  currentNormParams = loadNormParamsSetting();
+  recomputeScoresWithNormParams();
   renderFactorBars(currentWeights);
   renderRanking(currentWeights);
   renderSettings();
@@ -1128,12 +1143,16 @@ function renderFactorBars(weights) {
   const container = document.getElementById('score-factors');
   if (!container) return;
 
+  const bmMax  = (currentNormParams?.bm_view_ratio?.max        || 0.307).toFixed(3);
+  const evMax  = Math.round(currentNormParams?.all_hyoka_cnt_latest?.max || 35650).toLocaleString();
+  const mpMax  = Math.round(currentNormParams?.monthly_point_latest?.max || 38901).toLocaleString();
+
   const factors = [
     { key: 'rank',         label: 'ランク帯',        desc: '月刊1〜100位=高、101〜300=中、301〜=低' },
-    { key: 'bmView',       label: 'BM/View比率',    desc: 'ブックマーク数 ÷ 総閲覧数（最大値を100点として動的正規化）' },
+    { key: 'bmView',       label: 'BM/View比率',    desc: `ブックマーク数÷総閲覧数（${bmMax} 以上で満点）` },
     { key: 'growth',       label: 'View成長率',      desc: '直近6ヶ月の閲覧数の伸び（データ蓄積後に有効）' },
-    { key: 'eval',         label: '評価件数',        desc: '累計評価件数（データ内上位1%を100点として動的正規化）' },
-    { key: 'monthlyPoint', label: '月間ポイント',    desc: '直近1ヶ月の評価ポイント（データ内上位1%を100点として動的正規化）' },
+    { key: 'eval',         label: '評価件数',        desc: `累計評価件数（${evMax} 件以上で満点）` },
+    { key: 'monthlyPoint', label: '月間ポイント',    desc: `直近1ヶ月の評価ポイント（${mpMax} pt 以上で満点）` },
     { key: 'activity',     label: '活性スコア',      desc: '最終更新からの経過日数（30日以内=1.0）' },
   ];
   const totalW = factors.reduce((s, f) => s + (weights[f.key] || 0), 0) || 1;
@@ -1410,6 +1429,51 @@ function renderCorrelationChart() {
 // ---- View 4: 設定 ----
 function renderSettings() {
   updateWeightUI();
+  updateNormParamsUI();
+
+  // 基準値 適用ボタン
+  const applyNormBtn = document.getElementById('btn-apply-norm-params');
+  if (applyNormBtn && !applyNormBtn._bound) {
+    applyNormBtn._bound = true;
+    applyNormBtn.addEventListener('click', () => {
+      const bmInput = document.getElementById('norm-bm-view');
+      const evInput = document.getElementById('norm-eval');
+      const mpInput = document.getElementById('norm-monthly-point');
+      const bmVal = parseFloat(bmInput?.value);
+      const evVal = parseFloat(evInput?.value);
+      const mpVal = parseFloat(mpInput?.value);
+      if (!bmVal || !evVal || !mpVal || bmVal <= 0 || evVal <= 0 || mpVal <= 0) {
+        alert('基準値はすべて 0 より大きい値を入力してください。');
+        return;
+      }
+      if (!currentNormParams) currentNormParams = {};
+      currentNormParams.bm_view_ratio        = { min: 0.0, max: bmVal };
+      currentNormParams.all_hyoka_cnt_latest = { min: 0.0, max: evVal };
+      currentNormParams.monthly_point_latest = { min: 0.0, max: mpVal };
+      saveNormParamsSetting(currentNormParams);
+      recomputeScoresWithNormParams();
+      renderFactorBars(currentWeights);
+      currentPage = 0;
+      renderRanking(currentWeights);
+      if (selectedNcode) renderComparison(selectedNcode);
+    });
+  }
+
+  // 基準値 リセットボタン
+  const resetNormBtn = document.getElementById('btn-reset-norm-params');
+  if (resetNormBtn && !resetNormBtn._bound) {
+    resetNormBtn._bound = true;
+    resetNormBtn.addEventListener('click', () => {
+      currentNormParams = fileNormParams ? JSON.parse(JSON.stringify(fileNormParams)) : null;
+      try { localStorage.removeItem(LS_NORM_KEY); } catch (_) {}
+      updateNormParamsUI();
+      recomputeScoresWithNormParams();
+      renderFactorBars(currentWeights);
+      currentPage = 0;
+      renderRanking(currentWeights);
+      if (selectedNcode) renderComparison(selectedNcode);
+    });
+  }
 }
 
 const WEIGHT_KEYS = ['genre', 'tag', 'rank', 'bmView', 'growth', 'eval', 'monthlyPoint', 'activity'];
@@ -1514,6 +1578,66 @@ function saveWeights(w) {
     });
     history.replaceState(null, '', '?' + params.toString());
   } catch (_) {}
+}
+
+// ---- norm_params（満点基準値）管理 ----
+
+function loadNormParamsSetting() {
+  try {
+    const raw = localStorage.getItem(LS_NORM_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (_) {}
+  return fileNormParams ? JSON.parse(JSON.stringify(fileNormParams)) : null;
+}
+
+function saveNormParamsSetting(np) {
+  try {
+    localStorage.setItem(LS_NORM_KEY, JSON.stringify(np));
+  } catch (_) {}
+}
+
+function updateNormParamsUI() {
+  const bmVal = currentNormParams?.bm_view_ratio?.max;
+  const evVal = currentNormParams?.all_hyoka_cnt_latest?.max;
+  const mpVal = currentNormParams?.monthly_point_latest?.max;
+
+  const bmInput = document.getElementById('norm-bm-view');
+  const evInput = document.getElementById('norm-eval');
+  const mpInput = document.getElementById('norm-monthly-point');
+  if (bmInput && bmVal != null) bmInput.value = bmVal.toFixed(3);
+  if (evInput && evVal != null) evInput.value = Math.round(evVal);
+  if (mpInput && mpVal != null) mpInput.value = Math.round(mpVal);
+
+  // ファイルデフォルト値を表示
+  if (fileNormParams) {
+    const fBm = fileNormParams?.bm_view_ratio?.max;
+    const fEv = fileNormParams?.all_hyoka_cnt_latest?.max;
+    const fMp = fileNormParams?.monthly_point_latest?.max;
+    const bmFileEl = document.getElementById('norm-bm-view-file');
+    const evFileEl = document.getElementById('norm-eval-file');
+    const mpFileEl = document.getElementById('norm-monthly-point-file');
+    if (bmFileEl && fBm != null) bmFileEl.textContent = `ファイル値: ${fBm.toFixed(3)}`;
+    if (evFileEl && fEv != null) evFileEl.textContent = `ファイル値: ${Math.round(fEv).toLocaleString()} 件`;
+    if (mpFileEl && fMp != null) mpFileEl.textContent = `ファイル値: ${Math.round(fMp).toLocaleString()} pt`;
+  }
+}
+
+function recomputeScoresWithNormParams() {
+  if (!novelsData?.novels || !currentNormParams) return;
+  const bmMax  = currentNormParams?.bm_view_ratio?.max        || 0.307;
+  const evMax  = currentNormParams?.all_hyoka_cnt_latest?.max || 35650;
+  const mpMax  = currentNormParams?.monthly_point_latest?.max || 38901;
+
+  novelsData.novels.forEach((novel) => {
+    const bmScore = Math.min(1.0, (novel.bm_view_ratio        || 0) / bmMax);
+    const evSc    = Math.min(1.0, (novel.all_hyoka_cnt_latest || 0) / evMax);
+    const mpSc    = Math.min(1.0, (novel.monthly_point_latest || 0) / mpMax);
+    (novel.pattern1_scores || []).forEach((entry) => {
+      entry.bm_view_score       = bmScore;
+      entry.eval_score          = evSc;
+      entry.monthly_point_score = mpSc;
+    });
+  });
 }
 
 // ---- タブ切り替え ----

@@ -536,6 +536,48 @@ tbody td {
   font-size: 0.875rem;
 }
 
+/* norm_params（満点基準値）設定UI */
+.norm-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.norm-label-wrap {
+  width: 200px;
+  flex-shrink: 0;
+}
+
+.norm-label-wrap label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.norm-hint {
+  display: block;
+  font-size: 0.72rem;
+  color: #888;
+  line-height: 1.4;
+  margin-top: 1px;
+}
+
+.norm-row input[type="number"] {
+  width: 120px;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.norm-file-val {
+  font-size: 0.8rem;
+  color: #888;
+  white-space: nowrap;
+}
+
 /* 比較グラフ上部の戻るバー */
 .back-bar {
   margin-bottom: 1rem;
