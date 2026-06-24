@@ -11,6 +11,17 @@ on:
         description: '取得終了日（YYYY-MM-DD、空欄で今日）'
         required: false
         default: ''
+      frequency:
+        description: '取得頻度: monthly（1ヶ月1件・高速 / 6年分=約72リクエスト）/ daily（1日1件・詳細 / 6年分=約2190リクエスト）'
+        type: choice
+        options:
+          - monthly
+          - daily
+        default: monthly
+      anime_only:
+        description: 'anime_works.csv に含まれる ncode のみ保存（CSVサイズ削減）'
+        type: boolean
+        default: true
 
 jobs:
   backfill:
@@ -36,9 +47,11 @@ jobs:
           if [ -z "$END_DATE" ]; then
             END_DATE=$(date '+%Y-%m-%d')
           fi
-          python scripts/backfill_wayback.py \
-            --start "${{ inputs.start_date }}" \
-            --end "$END_DATE"
+          ARGS="--start ${{ inputs.start_date }} --end $END_DATE --frequency ${{ inputs.frequency }}"
+          if [ "${{ inputs.anime_only }}" = "true" ]; then
+            ARGS="$ARGS --anime-only"
+          fi
+          python scripts/backfill_wayback.py $ARGS
 
       - name: 類似度スコア再計算・JSON 生成
         run: python scripts/compute_similarity.py

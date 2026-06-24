@@ -22,12 +22,18 @@ CDX_API_URL = "https://web.archive.org/cdx/search/cdx"
 NAROU_RANKING_URL = "https://yomou.syosetu.com/rank/list/type/monthly_total/"
 # アーカイブ取得後のスリープ秒数（Wayback Machine のレート制限対策）
 WAYBACK_SLEEP_SEC = 5
-# リトライ設定（503/429 等の一時エラー用）
-FETCH_RETRY_MAX = 5
-FETCH_RETRY_SLEEP_BASE = 30  # CDX API 用の初期待機秒数（503 多発のため長めに設定）
-HTML_RETRY_SLEEP_BASE = 10   # アーカイブ HTML 取得用の初期待機秒数
+# リトライ設定（503/429/タイムアウト等）
+FETCH_RETRY_MAX = 3
+FETCH_RETRY_SLEEP_BASE = 20   # 初期待機秒数（指数バックオフ: 20s, 40s, 80s）
 # 一時エラーとみなすHTTPステータスコード（リトライ対象）
 RETRYABLE_STATUS = {429, 500, 502, 503, 504}
+# リトライ対象とする例外クラス
+RETRYABLE_EXCEPTIONS = (
+    requests.exceptions.ConnectTimeout,
+    requests.exceptions.ReadTimeout,
+    requests.exceptions.ConnectionError,
+    requests.exceptions.SSLError,
+)
 
 
 def _request_with_retry(
@@ -41,40 +47,46 @@ def _request_with_retry(
     最大リトライ回数を超えた場合は None を返す（致命エラーにしない）。
     """
     for attempt in range(max_retry):
+        wait = sleep_base * (2 ** attempt)
         try:
-            resp = requests.get(url, params=params, timeout=60)
+            resp = requests.get(url, params=params, timeout=20)
             if resp.status_code in RETRYABLE_STATUS:
-                wait = sleep_base * (2 ** attempt)
-                logger.warning(
-                    "%s HTTP %d (試行 %d/%d)、%d 秒後リトライ",
-                    label or url[:60], resp.status_code, attempt + 1, max_retry, wait,
-                )
-                time.sleep(wait)
-                continue
+                if attempt < max_retry - 1:
+                    logger.warning(
+                        "%s HTTP %d (試行 %d/%d)、%d 秒後リトライ",
+                        label or url[:60], resp.status_code, attempt + 1, max_retry, wait,
+                    )
+                    time.sleep(wait)
+                    continue
+                logger.warning("%s HTTP %d（リトライ上限）スキップ", label or url[:60], resp.status_code)
+                return None
             resp.raise_for_status()
             return resp
-        except requests.exceptions.SSLError as e:
-            wait = sleep_base * (2 ** attempt)
+        except RETRYABLE_EXCEPTIONS as e:
             if attempt < max_retry - 1:
                 logger.warning(
-                    "%s SSL エラー (試行 %d/%d)、%d 秒後リトライ: %s",
-                    label or url[:60], attempt + 1, max_retry, wait, e,
+                    "%s 一時エラー (試行 %d/%d)、%d 秒後リトライ: %s",
+                    label or url[:60], attempt + 1, max_retry, wait, type(e).__name__,
                 )
                 time.sleep(wait)
             else:
-                logger.warning("%s SSL エラー（リトライ上限）: %s", label or url[:60], e)
+                logger.warning("%s エラー（リトライ上限）スキップ: %s", label or url[:60], type(e).__name__)
                 return None
         except requests.exceptions.RequestException as e:
-            logger.warning("%s リクエストエラー: %s", label or url[:60], e)
+            logger.warning("%s 取得不可（スキップ）: %s", label or url[:60], e)
             return None
-    logger.warning("%s リトライ上限到達、スキップ", label or url[:60])
     return None
 
 
-def list_archive_urls(start: date, end: date) -> list[dict]:
+def list_archive_urls(start: date, end: date, frequency: str = "monthly") -> list[dict]:
     """Wayback Machine CDX API でアーカイブ URL 一覧を取得する。
     503 等の一時エラーはリトライし、失敗した場合は空リストを返す。
+
+    frequency:
+      "monthly" → collapse=timestamp:6（1ヶ月1件 / 6年分で約72件）
+      "daily"   → collapse=timestamp:8（1日1件 / 6年分で約2190件）
     """
+    collapse_level = "timestamp:6" if frequency == "monthly" else "timestamp:8"
     results: list[dict] = []
     params: dict = {
         "url": NAROU_RANKING_URL,
@@ -82,7 +94,7 @@ def list_archive_urls(start: date, end: date) -> list[dict]:
         "fl": "timestamp,original",
         "from": start.strftime("%Y%m%d"),
         "to": end.strftime("%Y%m%d"),
-        "collapse": "timestamp:8",  # 1日1件に絞る
+        "collapse": collapse_level,
         "limit": 500,
     }
     while True:
@@ -189,14 +201,43 @@ def main() -> None:
     default_end = date.today().isoformat()
     parser.add_argument("--start", default=default_start, help="取得開始日 (YYYY-MM-DD)")
     parser.add_argument("--end", default=default_end, help="取得終了日 (YYYY-MM-DD)")
+    parser.add_argument(
+        "--frequency",
+        default="monthly",
+        choices=["monthly", "daily"],
+        help="取得頻度: monthly（1ヶ月1件・高速）/ daily（1日1件・詳細、デフォルト: monthly）",
+    )
+    parser.add_argument(
+        "--anime-only",
+        action="store_true",
+        help="anime_works.csv に含まれる ncode のみ保存する（CSV サイズ削減）",
+    )
     args = parser.parse_args()
 
     start = date.fromisoformat(args.start)
     end = date.fromisoformat(args.end)
 
-    logger.info("Wayback Machine アーカイブ一覧取得: %s 〜 %s", start, end)
-    archives = list_archive_urls(start, end)
+    # --anime-only 時は保存対象 ncode を絞り込む
+    anime_ncodes: set[str] | None = None
+    if args.anime_only:
+        from utils import ANIME_WORKS_CSV
+        anime_df = load_csv(ANIME_WORKS_CSV, dtype={"ncode": str})
+        if not anime_df.empty and "ncode" in anime_df.columns:
+            anime_ncodes = set(
+                str(n).upper() for n in anime_df["ncode"].dropna() if str(n).strip()
+            )
+            logger.info("--anime-only: 対象 ncode %d 件に絞り込み", len(anime_ncodes))
+
+    logger.info(
+        "Wayback Machine アーカイブ一覧取得: %s 〜 %s （頻度: %s）",
+        start, end, args.frequency,
+    )
+    archives = list_archive_urls(start, end, frequency=args.frequency)
     logger.info("対象アーカイブ件数: %d", len(archives))
+
+    if not archives:
+        logger.warning("取得できたアーカイブが 0 件でした。終了します")
+        return
 
     snapshots = load_csv(DAILY_SNAPSHOTS_CSV, dtype={"ncode": str})
     existing_keys: set[tuple[str, str]] = set()
@@ -204,16 +245,21 @@ def main() -> None:
         existing_keys = set(zip(snapshots["date"], snapshots["ncode"]))
 
     new_rows: list[dict] = []
-    for archive in archives:
+    for i, archive in enumerate(archives, start=1):
         timestamp = archive["timestamp"]
         # タイムスタンプ (YYYYMMDDHHmmss) から日付文字列を生成
         snapshot_date = f"{timestamp[:4]}-{timestamp[4:6]}-{timestamp[6:8]}"
+        logger.info("取得中 (%d/%d): %s", i, len(archives), snapshot_date)
 
         html = fetch_archive_html(timestamp)
         if html is None:
+            logger.warning("スキップ: %s", snapshot_date)
             continue
 
         for row in parse_ranking_html(html, snapshot_date):
+            # --anime-only の場合は対象外 ncode をスキップ
+            if anime_ncodes is not None and row["ncode"] not in anime_ncodes:
+                continue
             key = (row["date"], row["ncode"])
             if key in existing_keys:
                 # 同日・同 ncode は重複スキップ（冪等）
