@@ -170,6 +170,7 @@ async function loadData() {
   renderSettings();
   initGrowthCorrSelects();
   renderGrowthTab();
+  renderBooksTab();
 }
 
 function showLoading() {
@@ -1517,6 +1518,161 @@ function saveWeights(w) {
 }
 
 // ---- タブ切り替え ----
+// ---- 書籍分析タブ ----
+let bookScatterChart = null;
+
+function renderBooksTab() {
+  if (!novelsData) return;
+
+  const animeOnly = document.getElementById('book-filter-anime')?.checked || false;
+  const notAnimeOnly = document.getElementById('book-filter-not-anime')?.checked || false;
+
+  const books = novelsData.novels.filter((n) => {
+    if (!n.is_book) return false;
+    if (animeOnly && !n.is_anime) return false;
+    if (notAnimeOnly && n.is_anime) return false;
+    return true;
+  });
+
+  renderBookScatter(books);
+  renderBookRanking(books);
+}
+
+function renderBookScatter(books) {
+  const ctx = document.getElementById('book-scatter-chart')?.getContext('2d');
+  if (!ctx) return;
+
+  if (bookScatterChart) { bookScatterChart.destroy(); bookScatterChart = null; }
+
+  const points = books
+    .filter((n) => n.amazon_rating != null && n.amazon_review_count != null)
+    .map((n) => ({
+      x: n.amazon_rating,
+      y: n.amazon_review_count,
+      _title: n.title,
+      _amazonTitle: n.amazon_title_vol1 || '',
+      _isAnime: n.is_anime,
+    }));
+
+  if (points.length === 0) {
+    ctx.canvas.closest('.card').querySelector('.graph-hint').textContent =
+      '散布図を描画するには評価・レビュー数が揃った作品が必要です。';
+    return;
+  }
+
+  // アニメ化済み・未アニメ化で色分け
+  const animePoints = points.filter((p) => p._isAnime);
+  const nonAnimePoints = points.filter((p) => !p._isAnime);
+
+  bookScatterChart = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [
+        {
+          label: '未アニメ化',
+          data: nonAnimePoints,
+          backgroundColor: 'rgba(26, 122, 74, 0.7)',
+          pointRadius: 6,
+          pointHoverRadius: 9,
+        },
+        {
+          label: 'アニメ化済み',
+          data: animePoints,
+          backgroundColor: 'rgba(15, 52, 96, 0.75)',
+          pointRadius: 7,
+          pointHoverRadius: 10,
+          pointStyle: 'triangle',
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const d = ctx.raw;
+              const lines = [d._title];
+              if (d._amazonTitle && d._amazonTitle !== d._title) lines.push(`(${d._amazonTitle})`);
+              lines.push(`★${d.x.toFixed(1)}　レビュー ${d.y.toLocaleString()}件`);
+              return lines;
+            },
+          },
+        },
+        legend: { position: 'bottom' },
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Amazon 星評価' },
+          min: 1,
+          max: 5,
+          ticks: { stepSize: 0.5 },
+        },
+        y: {
+          title: { display: true, text: 'レビュー件数' },
+          beginAtZero: true,
+        },
+      },
+    },
+  });
+}
+
+function renderBookRanking(books) {
+  const sortKey = document.getElementById('book-rank-sort')?.value || 'combined';
+  const thead = document.getElementById('book-ranking-head');
+  const tbody = document.getElementById('book-ranking-body');
+  const titleEl = document.getElementById('book-ranking-title');
+  if (!thead || !tbody) return;
+
+  const sortLabels = { combined: '総合スコア', rating: '星評価', reviews: 'レビュー件数' };
+  if (titleEl) titleEl.textContent = `書籍ランキング（${sortLabels[sortKey] || ''}順）`;
+
+  const scored = books.map((n) => {
+    const r = n.amazon_rating ?? 0;
+    const c = n.amazon_review_count ?? 0;
+    return { ...n, _combined: r * Math.log10(c + 1) };
+  });
+
+  scored.sort((a, b) => {
+    if (sortKey === 'rating') return (b.amazon_rating ?? 0) - (a.amazon_rating ?? 0);
+    if (sortKey === 'reviews') return (b.amazon_review_count ?? 0) - (a.amazon_review_count ?? 0);
+    return b._combined - a._combined;
+  });
+
+  thead.innerHTML = `<tr>
+    <th>順位</th>
+    <th>タイトル</th>
+    <th>★評価</th>
+    <th>レビュー数</th>
+    <th>Amazon</th>
+  </tr>`;
+
+  if (scored.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="placeholder">書籍化データがありません。</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = scored.map((n, i) => {
+    const badges = [
+      n.is_anime ? '<span class="anime-badge">アニメ化済み</span>' : '',
+    ].join('');
+    const stars = n.amazon_rating != null ? `★${n.amazon_rating.toFixed(1)}` : '—';
+    const reviews = n.amazon_review_count != null
+      ? n.amazon_review_count.toLocaleString() + '件'
+      : '—';
+    const link = n.amazon_url_vol1
+      ? `<a class="novel-link" href="${escHtml(n.amazon_url_vol1)}" target="_blank" rel="noopener">Amazon</a>`
+      : '—';
+    return `<tr>
+      <td>${i + 1}</td>
+      <td>${escHtml(n.title)}${badges}</td>
+      <td style="text-align:center;">${stars}</td>
+      <td style="text-align:right;">${reviews}</td>
+      <td style="text-align:center;">${link}</td>
+    </tr>`;
+  }).join('');
+}
+
 function switchTab(tabId) {
   document.querySelectorAll('.tab-btn').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.tab === tabId);
@@ -1524,6 +1680,7 @@ function switchTab(tabId) {
   document.querySelectorAll('.tab-panel').forEach((panel) => {
     panel.classList.toggle('active', panel.id === `tab-${tabId}`);
   });
+  if (tabId === 'books') renderBooksTab();
 }
 
 // ---- ユーティリティ ----
@@ -1591,6 +1748,17 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('btn-reset-filters')?.addEventListener('click', resetFilters);
+
+  // 書籍分析タブのコントロール
+  document.getElementById('book-rank-sort')?.addEventListener('change', () => renderBooksTab());
+  document.getElementById('book-filter-anime')?.addEventListener('change', (e) => {
+    if (e.target.checked) document.getElementById('book-filter-not-anime').checked = false;
+    renderBooksTab();
+  });
+  document.getElementById('book-filter-not-anime')?.addEventListener('change', (e) => {
+    if (e.target.checked) document.getElementById('book-filter-anime').checked = false;
+    renderBooksTab();
+  });
 
   document.getElementById('prev-page').addEventListener('click', () => {
     if (currentPage > 0) { currentPage--; renderRanking(currentWeights); }

@@ -764,7 +764,21 @@ tbody td {
   border-color: #e94560;
 }
 
+/* 書籍分析タブ: 散布図とランキングを横並び */
+.book-analysis-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
 /* レスポンシブ調整 */
+@media (max-width: 900px) {
+  .book-analysis-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 600px) {
   header {
     flex-direction: column;

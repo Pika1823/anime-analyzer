@@ -289,24 +289,42 @@ def fetch_product_detail(session: requests.Session, asin: str) -> dict:
         return {"amazon_rating": None, "amazon_review_count": None}
 
     rating: float | None = None
-    # 複数セレクタでフォールバック（Amazon は JS 動的生成のため取れない場合あり）
-    for sel in [
-        "span[data-hook='rating-out-of-text']",
-        "#averageCustomerReviews .a-icon-alt",
-        "#acrPopover .a-icon-alt",
-        "span.a-icon-alt",
+
+    # 最優先: #acrPopover の title 属性は静的 HTML に含まれる
+    # 例: <span id="acrPopover" title="5つ星のうち4.3">
+    for sel, attr in [
+        ("#acrPopover", "title"),
+        ("span[data-hook='averageStarRating']", "title"),
+        ("#averageCustomerReviews", "title"),
     ]:
         el = soup.select_one(sel)
-        if el:
-            v = _parse_rating(el.get_text(strip=True))
+        if el and el.get(attr):
+            v = _parse_rating(el.get(attr, ""))
             if v is not None:
                 rating = v
                 break
 
+    # フォールバック: テキストコンテンツから抽出
+    if rating is None:
+        for sel in [
+            "span[data-hook='rating-out-of-text']",
+            "#averageCustomerReviews .a-icon-alt",
+            "#acrPopover .a-icon-alt",
+            "span.a-icon-alt",
+        ]:
+            el = soup.select_one(sel)
+            if el:
+                v = _parse_rating(el.get_text(strip=True))
+                if v is not None:
+                    rating = v
+                    break
+
     review_count: int | None = None
+    # #acrCustomerReviewText は静的 HTML に含まれることが多い
     for sel in [
-        "span[data-hook='total-review-count']",
         "#acrCustomerReviewText",
+        "span[data-hook='total-review-count']",
+        "span[data-hook='total-review-count'] .a-size-base",
         "a[data-hook='see-all-reviews-link-foot']",
     ]:
         el = soup.select_one(sel)

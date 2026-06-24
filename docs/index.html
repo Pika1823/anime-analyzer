@@ -17,6 +17,7 @@
     <button class="tab-btn" data-tab="comparison">比較グラフ</button>
     <button class="tab-btn" data-tab="trends">Trends 比較</button>
     <button class="tab-btn" data-tab="growth">📈 成長分析</button>
+    <button class="tab-btn" data-tab="books">📚 書籍分析</button>
     <button class="tab-btn" data-tab="settings">⚙ 設定</button>
   </nav>
 </header>
@@ -215,6 +216,49 @@
       </div>
       <div class="chart-container" style="height:420px;"><canvas id="correlation-chart"></canvas></div>
       <p class="graph-hint">💡 2つの指標の相関を確認できます。右上に集まるほど両指標で高い作品です。赤点（上位N作品）の分布から「評価件数が多い作品ほど成長率も高いか」「月刊順位が高いほど評価ポイント増加も大きいか」などを読み取れます。</p>
+    </div>
+  </section>
+
+  <!-- Tab: 書籍分析 -->
+  <section id="tab-books" class="tab-panel">
+    <h2 class="section-title">📚 書籍化作品 分析</h2>
+
+    <div class="filter-bar">
+      <label>ランキング軸:
+        <select id="book-rank-sort">
+          <option value="combined">総合スコア（★×log件数）</option>
+          <option value="rating">星評価</option>
+          <option value="reviews">レビュー件数</option>
+        </select>
+      </label>
+      <label class="filter-check">
+        <input type="checkbox" id="book-filter-anime" />
+        アニメ化済みのみ
+      </label>
+      <label class="filter-check">
+        <input type="checkbox" id="book-filter-not-anime" />
+        未アニメ化のみ
+      </label>
+    </div>
+
+    <div class="book-analysis-grid">
+      <div class="card">
+        <h4 class="chart-title">評価・レビュー数 散布図</h4>
+        <div class="chart-container" style="height:380px;"><canvas id="book-scatter-chart"></canvas></div>
+        <p class="graph-hint">💡 横軸: Amazon 星評価、縦軸: レビュー件数。右上ほど評価・人気が高い書籍です。点をホバーするとタイトルが表示されます。</p>
+      </div>
+
+      <div class="card">
+        <h4 class="chart-title" id="book-ranking-title">書籍ランキング</h4>
+        <div class="table-wrap">
+          <table>
+            <thead id="book-ranking-head"></thead>
+            <tbody id="book-ranking-body">
+              <tr><td colspan="5" class="placeholder">書籍化フラグ済みの作品データがありません。</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </section>
 
