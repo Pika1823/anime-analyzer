@@ -58,4 +58,5 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/book_works.csv docs/
           git diff --staged --quiet || git commit -m "chore: 書籍化情報更新 $(date '+%Y-%m-%d')"
+          git pull --rebase origin main
           git push
