@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import argparse
 import json
 import math
 import sys
@@ -75,8 +76,14 @@ def calc_rank_score(monthly_rank: int | float | None) -> float:
     return 0.0  # 1001以上はランク外
 
 
-def calc_bm_view_score(bookmark: int | float, cumulative_view: int | float | None) -> float:
-    """ブックマーク数と累計 View 数からスコアを計算する。"""
+def calc_bm_view_score(
+    bookmark: int | float,
+    cumulative_view: int | float | None,
+    max_ratio: float = 0.05,
+) -> float:
+    """ブックマーク数と累計 View 数からスコアを計算する。
+    max_ratio は norm_params から動的に供給される（デフォルトは 0.05）。
+    """
     if cumulative_view is None:
         return 0.0
     if isinstance(cumulative_view, float) and math.isnan(cumulative_view):
@@ -84,7 +91,7 @@ def calc_bm_view_score(bookmark: int | float, cumulative_view: int | float | Non
     if cumulative_view == 0:
         return 0.0
     ratio = float(bookmark) / float(cumulative_view)
-    return min(1.0, ratio / 0.05)
+    return min(1.0, ratio / max_ratio) if max_ratio > 0 else 0.0
 
 
 # デフォルト正規化パラメータ（norm_params.json が存在しない場合のフォールバック）
@@ -93,7 +100,78 @@ DEFAULT_NORM_PARAMS: dict[str, dict[str, float]] = {
     "all_point_latest":      {"min": 0.0, "max": 300000.0},
     "monthly_point_latest":  {"min": 0.0, "max": 10000.0},
     "impression_cnt_latest": {"min": 0.0, "max": 500.0},
+    "bm_view_ratio":         {"min": 0.0, "max": 0.05},
 }
+
+
+def compute_and_save_norm_params(
+    novels_df: "pd.DataFrame",
+    snapshots_df: "pd.DataFrame",
+) -> dict[str, dict[str, float]]:
+    """novels.csv の実データから動的に正規化パラメータを計算し norm_params.json に保存する。
+
+    99パーセンタイルを上限として使用することで外れ値の影響を抑える。
+    """
+    params: dict[str, dict[str, float]] = dict(DEFAULT_NORM_PARAMS)
+
+    def _percentile_max(series: "pd.Series", pct: float = 99.0) -> float:
+        """NaN を除外した上で指定パーセンタイル値を返す。"""
+        vals = pd.to_numeric(series, errors="coerce").dropna()
+        vals = vals[vals > 0]
+        if vals.empty:
+            return 1.0
+        return float(vals.quantile(pct / 100))
+
+    if not novels_df.empty:
+        # 評価件数
+        if "all_hyoka_cnt_latest" in novels_df.columns:
+            params["all_hyoka_cnt_latest"] = {
+                "min": 0.0,
+                "max": _percentile_max(novels_df["all_hyoka_cnt_latest"]),
+            }
+
+        # 月間ポイント
+        if "monthly_point_latest" in novels_df.columns:
+            params["monthly_point_latest"] = {
+                "min": 0.0,
+                "max": _percentile_max(novels_df["monthly_point_latest"]),
+            }
+
+        # 累計評価ポイント
+        if "all_point_latest" in novels_df.columns:
+            params["all_point_latest"] = {
+                "min": 0.0,
+                "max": _percentile_max(novels_df["all_point_latest"]),
+            }
+
+        # BM/View 比率（ブックマーク ÷ 総合評価ポイント）
+        bm_col = "bookmark_count_latest"
+        gp_col = "global_point_latest"
+        if bm_col in novels_df.columns and gp_col in novels_df.columns:
+            bm = pd.to_numeric(novels_df[bm_col], errors="coerce")
+            gp = pd.to_numeric(novels_df[gp_col], errors="coerce")
+            ratios = (bm / gp).replace([float("inf"), -float("inf")], None).dropna()
+            ratios = ratios[ratios > 0]
+            if not ratios.empty:
+                params["bm_view_ratio"] = {
+                    "min": 0.0,
+                    "max": float(ratios.quantile(0.99)),
+                }
+
+    # norm_params.json を保存
+    output = {
+        "computed_at": date.today().isoformat(),
+        "params": params,
+    }
+    NORM_PARAMS_JSON.parent.mkdir(parents=True, exist_ok=True)
+    NORM_PARAMS_JSON.write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8")
+    logger.info(
+        "norm_params.json を更新しました: eval上限=%.0f, monthly_point上限=%.0f, bm_view_ratio上限=%.4f",
+        params["all_hyoka_cnt_latest"]["max"],
+        params["monthly_point_latest"]["max"],
+        params["bm_view_ratio"]["max"],
+    )
+    return params
 
 
 def calc_norm_score(value: int | float | None, min_val: float, max_val: float) -> float:
@@ -359,18 +437,30 @@ def _nan_to_none(value: object) -> object:
 
 def main() -> None:
     """メイン処理: CSV を読み込み、類似度スコアを計算し、JSON ファイルを出力する。"""
+    parser = argparse.ArgumentParser(description="類似度スコア計算・JSON 生成")
+    parser.add_argument(
+        "--update-norm-only",
+        action="store_true",
+        help="正規化パラメータ (norm_params.json) のみ更新して終了する",
+    )
+    args = parser.parse_args()
+
     logger.info("compute_similarity.py 開始")
 
-    # 正規化パラメータ読み込み（月曜日の fetch_narou.py 実行時に更新される）
-    norm_params = load_norm_params()
-
-    # CSV 読み込み
+    # CSV 読み込み（正規化パラメータ計算に novels_df が必要なため先に読む）
     novels_df = load_csv(NOVELS_CSV)
     anime_df = load_csv(ANIME_WORKS_CSV)
     snapshots_df = load_csv(DAILY_SNAPSHOTS_CSV)
     trends_df = load_csv(TRENDS_CACHE_CSV)
     annict_df = load_csv(ANNICT_WORKS_CSV, dtype={"ncode": str})
     book_df = load_csv(BOOK_WORKS_CSV, dtype={"ncode": str})
+
+    # 正規化パラメータをデータから動的計算・保存（毎回更新）
+    norm_params = compute_and_save_norm_params(novels_df, snapshots_df)
+
+    if args.update_norm_only:
+        logger.info("--update-norm-only: norm_params.json を更新して終了します")
+        return
 
     # Annict データを ncode でインデックス化（高速ルックアップ用）
     annict_by_ncode: dict[str, dict] = {}
@@ -427,7 +517,8 @@ def main() -> None:
             bookmark_val = float(bookmark) if bookmark is not None else 0.0
         except (ValueError, TypeError):
             bookmark_val = 0.0
-        bm_view_score = calc_bm_view_score(bookmark_val, global_point_latest)
+        bm_view_max = norm_params.get("bm_view_ratio", {}).get("max", 0.05)
+        bm_view_score = calc_bm_view_score(bookmark_val, global_point_latest, bm_view_max)
 
         # bm_view_ratio 計算
         if global_point_latest and global_point_latest > 0:

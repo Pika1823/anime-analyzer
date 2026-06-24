@@ -1129,13 +1129,11 @@ function renderFactorBars(weights) {
   if (!container) return;
 
   const factors = [
-    { key: 'genre',        label: 'ジャンル一致',   desc: 'ファンタジー・恋愛など大分類が同じか' },
-    { key: 'tag',          label: 'タグ類似度',      desc: '「転生」「異世界」など共通キーワードの割合' },
     { key: 'rank',         label: 'ランク帯',        desc: '月刊1〜100位=高、101〜300=中、301〜=低' },
-    { key: 'bmView',       label: 'BM/View比率',    desc: 'ブックマーク数 ÷ 総閲覧数（コア読者の定着度）' },
+    { key: 'bmView',       label: 'BM/View比率',    desc: 'ブックマーク数 ÷ 総閲覧数（最大値を100点として動的正規化）' },
     { key: 'growth',       label: 'View成長率',      desc: '直近6ヶ月の閲覧数の伸び（データ蓄積後に有効）' },
-    { key: 'eval',         label: '評価件数',        desc: '累計評価件数（30000件で満点 — いいね数の代替）' },
-    { key: 'monthlyPoint', label: '月間ポイント',    desc: '直近1ヶ月の評価ポイント（10000ptで満点）' },
+    { key: 'eval',         label: '評価件数',        desc: '累計評価件数（データ内上位1%を100点として動的正規化）' },
+    { key: 'monthlyPoint', label: '月間ポイント',    desc: '直近1ヶ月の評価ポイント（データ内上位1%を100点として動的正規化）' },
     { key: 'activity',     label: '活性スコア',      desc: '最終更新からの経過日数（30日以内=1.0）' },
   ];
   const totalW = factors.reduce((s, f) => s + (weights[f.key] || 0), 0) || 1;

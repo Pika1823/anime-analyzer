@@ -17,6 +17,10 @@ on:
         description: 'Annict アニメ化情報更新を強制実行（月曜以外でも実行）'
         type: boolean
         default: false
+      update_norm_only:
+        description: '正規化パラメータ (norm_params.json) のみ更新する（スコア計算はスキップ）'
+        type: boolean
+        default: false
 
 jobs:
   update:
@@ -56,7 +60,12 @@ jobs:
           ANNICT_API_KEY: ${{ secrets.ANNICT_API_KEY }}
           FORCE_RUN: ${{ inputs.force_annict }}
 
+      - name: 正規化パラメータのみ更新（update_norm_only が true の場合）
+        if: ${{ inputs.update_norm_only == true }}
+        run: python scripts/compute_similarity.py --update-norm-only
+
       - name: 類似度スコア計算・JSON 生成
+        if: ${{ inputs.update_norm_only != true }}
         run: |
           if [ -f scripts/compute_similarity.py ]; then
             python scripts/compute_similarity.py
