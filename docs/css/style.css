@@ -113,6 +113,26 @@ main {
   padding: 0.25rem 0.5rem;
 }
 
+/* タイトル検索ボックス */
+.filter-title-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.filter-title-wrap input[type="text"] {
+  font-size: 0.875rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 0.25rem 0.6rem;
+  width: 180px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.filter-title-wrap input[type="text"]:focus {
+  border-color: #0f3460;
+}
+
 .range-label {
   font-size: 0.875rem;
   color: #555;

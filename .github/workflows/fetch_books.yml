@@ -7,8 +7,12 @@ on:
         description: 'なろうNコード（例: N1234AB）。空欄の場合は novels.csv 全件を対象にする'
         required: false
         default: ''
+      update_only:
+        description: '書籍化フラグ済み作品の評価・レビュー数のみ再取得する（新規検索なし）'
+        type: boolean
+        default: false
       skip_cached:
-        description: 'book_works.csv に既存エントリがある作品はスキップする'
+        description: '取得済み作品をスキップする（update_only=false のときのみ有効）'
         type: boolean
         default: true
 
@@ -33,11 +37,15 @@ jobs:
       - name: 書籍化情報取得
         run: |
           ARGS=""
-          if [ -n "${{ inputs.ncode }}" ]; then
-            ARGS="--ncode ${{ inputs.ncode }}"
-          fi
-          if [ "${{ inputs.skip_cached }}" = "false" ]; then
-            ARGS="$ARGS --no-skip-cached"
+          if [ "${{ inputs.update_only }}" = "true" ]; then
+            ARGS="--update-only"
+          else
+            if [ -n "${{ inputs.ncode }}" ]; then
+              ARGS="--ncode ${{ inputs.ncode }}"
+            fi
+            if [ "${{ inputs.skip_cached }}" = "false" ]; then
+              ARGS="$ARGS --no-skip-cached"
+            fi
           fi
           python scripts/fetch_books.py $ARGS
 

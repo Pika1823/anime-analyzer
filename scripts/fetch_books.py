@@ -328,11 +328,75 @@ def process_novels(
     return new_rows
 
 
+def update_ratings(existing: pd.DataFrame) -> list[dict]:
+    """is_book=True の作品の Amazon 評価・レビュー数のみを再取得して返す。
+
+    Amazon 検索は行わず、book_works.csv に保存済みの ASIN を直接使って
+    商品ページから最新の評価値を取得する。
+
+    Args:
+        existing: 現在の book_works.csv DataFrame
+
+    Returns:
+        更新後の行辞書リスト（is_book=True の作品分のみ）
+    """
+    if existing.empty:
+        logger.info("book_works.csv が空です。update-only モードをスキップします")
+        return []
+
+    # is_book=True の行のみ対象
+    book_mask = existing["is_book"].astype(str).str.lower() == "true"
+    book_rows = existing[book_mask]
+
+    if book_rows.empty:
+        logger.info("書籍化フラグが立っている作品がありません")
+        return []
+
+    logger.info("評価再取得対象: %d 件", len(book_rows))
+    session = requests.Session()
+    session.headers.update(REQUEST_HEADERS)
+
+    updated: list[dict] = []
+    total = len(book_rows)
+
+    for i, (_, row) in enumerate(book_rows.iterrows()):
+        asin = str(row.get("amazon_asin_vol1") or "").strip()
+        title = str(row.get("narou_title") or "")
+        ncode = str(row.get("ncode") or "")
+
+        if not asin or asin == "nan":
+            logger.warning("[%d/%d] ASIN 未登録のためスキップ: %s (%s)", i + 1, total, title, ncode)
+            continue
+
+        logger.info("[%d/%d] 評価再取得: %s (ASIN=%s)", i + 1, total, title, asin)
+        detail = fetch_product_detail(session, asin)
+        _sleep()
+
+        updated_row = row.to_dict()
+        updated_row["amazon_rating"] = detail.get("amazon_rating")
+        updated_row["amazon_review_count"] = detail.get("amazon_review_count")
+        updated_row["checked_at"] = date.today().isoformat()
+        updated.append(updated_row)
+        logger.info(
+            "  → rating=%s reviews=%s",
+            updated_row["amazon_rating"],
+            updated_row["amazon_review_count"],
+        )
+
+    return updated
+
+
 def main() -> None:
     """エントリポイント。"""
     parser = argparse.ArgumentParser(description="なろう作品の書籍化情報を Amazon から取得する")
     parser.add_argument("--ncode", default="", help="特定の Nコード（例: N1234AB）")
     parser.add_argument("--title", default="", help="作品タイトル直接指定（ncode 未指定時に使用）")
+    parser.add_argument(
+        "--update-only",
+        action="store_true",
+        default=False,
+        help="書籍化フラグ済み作品の評価・レビュー数のみ再取得する（新規検索なし）",
+    )
     parser.add_argument(
         "--skip-cached",
         action="store_true",
@@ -347,8 +411,23 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    novels_df = load_csv(NOVELS_CSV, dtype={"ncode": str})
     existing = load_csv(BOOK_WORKS_CSV, dtype={"ncode": str})
+
+    # --- 評価更新専用モード ---
+    if args.update_only:
+        logger.info("update-only モード: 書籍化フラグ済み作品の評価を再取得します")
+        updated_rows = update_ratings(existing)
+        if not updated_rows:
+            logger.info("更新対象なし")
+            return
+        # updated_rows で既存行を上書き
+        merged = upsert_book_works(existing, updated_rows)
+        save_csv(merged, BOOK_WORKS_CSV)
+        logger.info("book_works.csv 更新完了: %d 件の評価を再取得", len(updated_rows))
+        return
+
+    # --- 通常モード（新規検索） ---
+    novels_df = load_csv(NOVELS_CSV, dtype={"ncode": str})
 
     # 処理対象を絞り込む
     if args.ncode:

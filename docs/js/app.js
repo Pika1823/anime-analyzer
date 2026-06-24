@@ -262,6 +262,9 @@ function renderRanking(weights) {
   const filterTop10 = document.getElementById('filter-top10').checked;
   const filterUnadapted = document.getElementById('filter-unadapted').checked;
   const filterAdapted = document.getElementById('filter-adapted').checked;
+  const filterBookOnly = document.getElementById('filter-book-only')?.checked || false;
+  const filterNoBook = document.getElementById('filter-no-book')?.checked || false;
+  const filterTitle = (document.getElementById('filter-title')?.value || '').trim().toLowerCase();
 
   // スコア再計算と並び替え
   const ranked = novelsData.novels
@@ -272,6 +275,9 @@ function renderRanking(weights) {
     .filter((n) => {
       if (filterUnadapted && n.is_anime) return false;
       if (filterAdapted && !n.is_anime) return false;
+      if (filterBookOnly && !n.is_book) return false;
+      if (filterNoBook && n.is_book) return false;
+      if (filterTitle && !(n.title || '').toLowerCase().includes(filterTitle)) return false;
       if (n._score < scoreThreshold) return false;
       if (selectedGenre && selectedGenre !== 'すべて' && n.genre_label !== selectedGenre) return false;
       if (filterTop10 && (n.best_rank_ever == null || n.best_rank_ever > 10)) return false;
@@ -378,6 +384,12 @@ function resetFilters() {
   if (unadapted) unadapted.checked = true;
   const adapted = document.getElementById('filter-adapted');
   if (adapted) adapted.checked = false;
+  const bookOnly = document.getElementById('filter-book-only');
+  if (bookOnly) bookOnly.checked = false;
+  const noBook = document.getElementById('filter-no-book');
+  if (noBook) noBook.checked = false;
+  const titleInput = document.getElementById('filter-title');
+  if (titleInput) titleInput.value = '';
 
   currentPage = 0;
   renderRanking(currentWeights);
@@ -1554,6 +1566,28 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target.checked) document.getElementById('filter-unadapted').checked = false;
     currentPage = 0;
     renderRanking(currentWeights);
+  });
+  document.getElementById('filter-book-only')?.addEventListener('change', (e) => {
+    // 相互排他: 書籍化済みのみ ON → 未書籍化のみ OFF
+    if (e.target.checked) document.getElementById('filter-no-book').checked = false;
+    currentPage = 0;
+    renderRanking(currentWeights);
+  });
+  document.getElementById('filter-no-book')?.addEventListener('change', (e) => {
+    // 相互排他: 未書籍化のみ ON → 書籍化済みのみ OFF
+    if (e.target.checked) document.getElementById('filter-book-only').checked = false;
+    currentPage = 0;
+    renderRanking(currentWeights);
+  });
+
+  // タイトル検索（入力のたびにリアルタイムで絞り込む）
+  let titleSearchTimer = null;
+  document.getElementById('filter-title')?.addEventListener('input', () => {
+    clearTimeout(titleSearchTimer);
+    titleSearchTimer = setTimeout(() => {
+      currentPage = 0;
+      renderRanking(currentWeights);
+    }, 200);
   });
 
   document.getElementById('btn-reset-filters')?.addEventListener('click', resetFilters);
