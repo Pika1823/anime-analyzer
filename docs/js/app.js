@@ -556,6 +556,36 @@ function renderPagination(page, totalPages, total) {
   nextBtn.disabled = page >= totalPages - 1;
 }
 
+// ---- 詳細情報パネル用ヘルパー ----
+/**
+ * 詳細情報の1行を生成する。normMax が指定されている場合はミニバー + 満点比率を表示。
+ * @param {string} label  表示ラベル
+ * @param {string} formattedVal  フォーマット済み値文字列
+ * @param {number|null} rawVal  バー計算用の数値（null なら no-bar）
+ * @param {number|null} normMax  満点基準値（null なら no-bar）
+ * @param {string} [unit]  満点ラベルに付ける単位（例: '件', ' pt'）
+ */
+function detailRow(label, formattedVal, rawVal, normMax, unit) {
+  if (normMax && normMax > 0 && rawVal != null) {
+    const pct = Math.min(100, (rawVal / normMax) * 100);
+    const maxLabel = normMax >= 10000
+      ? Math.round(normMax).toLocaleString() + (unit || '')
+      : normMax.toFixed(3) + (unit || '');
+    return `
+      <div class="detail-metric-row">
+        <span class="dm-label">${label}</span>
+        <span class="dm-val">${formattedVal}</span>
+        <div class="dm-bar-bg"><div class="dm-bar-fill" style="width:${pct.toFixed(1)}%"></div></div>
+        <span class="dm-pct">${pct.toFixed(1)}% <small>満点 ${maxLabel}</small></span>
+      </div>`;
+  }
+  return `
+    <div class="detail-metric-row no-bar">
+      <span class="dm-label">${label}</span>
+      <span class="dm-val">${formattedVal}</span>
+    </div>`;
+}
+
 // ---- View 2: 比較グラフ ----
 function renderComparison(ncode) {
   const container = document.getElementById('comparison-content');
@@ -573,6 +603,14 @@ function renderComparison(ncode) {
 
   const { score, animeId, animeTitle } = calcScore(novel, currentWeights);
   const bestEntry = novel.pattern1_scores?.find((e) => e.anime_id === animeId) || null;
+
+  // norm_params から満点基準値を取得（未ロード時は null → detailRow が no-bar にフォールバック）
+  const _np = currentNormParams || {};
+  const _bmMax   = _np.bm_view_ratio?.max        || null;
+  const _evalMax = _np.all_hyoka_cnt_latest?.max  || null;
+  const _aptMax  = _np.all_point_latest?.max      || null;
+  const _mptMax  = _np.monthly_point_latest?.max  || null;
+  const _impMax  = _np.impression_cnt_latest?.max || null;
 
   const rankHistory = snapshotsData?.snapshots?.[ncode] || [];
 
@@ -692,32 +730,41 @@ function renderComparison(ncode) {
         </div>
       </div>
 
-      <div class="detail-section">
-        <h4 class="detail-section-title">評価指標</h4>
-        <div class="meta-row">
-          <span><strong>評価件数:</strong> ${novel.all_hyoka_cnt_latest != null ? novel.all_hyoka_cnt_latest.toLocaleString() + ' 件' : '—'}</span>
-          <span><strong>累計評価ポイント:</strong> ${novel.all_point_latest != null ? novel.all_point_latest.toLocaleString() + ' pt' : '—'}</span>
-          <span><strong>総合評価ポイント:</strong> ${gpLatest != null ? gpLatest.toLocaleString() : '—'}</span>
-          <span><strong>月間ポイント:</strong> ${novel.monthly_point_latest != null ? novel.monthly_point_latest.toLocaleString() + ' pt' : '—'}</span>
-          <span><strong>週間ポイント:</strong> ${novel.weekly_point_latest != null ? novel.weekly_point_latest.toLocaleString() + ' pt' : '—'}</span>
-          <span><strong>日間ポイント:</strong> ${novel.daily_point_latest != null ? novel.daily_point_latest.toLocaleString() + ' pt' : '—'}</span>
-          <span><strong>ブックマーク:</strong> ${novel.bookmark_count_latest != null ? novel.bookmark_count_latest.toLocaleString() : '—'}</span>
-          <span><strong>週間ユニーク:</strong> ${novel.weekly_unique_latest != null ? novel.weekly_unique_latest.toLocaleString() : '—'}</span>
-          <span><strong>感想件数:</strong> ${novel.impression_cnt_latest != null ? novel.impression_cnt_latest.toLocaleString() + ' 件' : '—'}</span>
-          <span><strong>レビュー件数:</strong> ${novel.review_cnt_latest != null ? novel.review_cnt_latest.toLocaleString() + ' 件' : '—'}</span>
-        </div>
+      <div class="detail-group">
+        <h4 class="detail-section-title">規模・人気</h4>
+        ${detailRow('評価件数', novel.all_hyoka_cnt_latest != null ? novel.all_hyoka_cnt_latest.toLocaleString() + ' 件' : '—', novel.all_hyoka_cnt_latest, _evalMax, '件')}
+        ${detailRow('累計評価ポイント', novel.all_point_latest != null ? novel.all_point_latest.toLocaleString() + ' pt' : '—', novel.all_point_latest, _aptMax, ' pt')}
+        ${detailRow('ブックマーク', novel.bookmark_count_latest != null ? novel.bookmark_count_latest.toLocaleString() : '—', null, null)}
+        ${detailRow('感想件数', novel.impression_cnt_latest != null ? novel.impression_cnt_latest.toLocaleString() + ' 件' : '—', novel.impression_cnt_latest, _impMax, '件')}
+        ${detailRow('レビュー件数', novel.review_cnt_latest != null ? novel.review_cnt_latest.toLocaleString() + ' 件' : '—', null, null)}
+        ${detailRow('週間ユニーク', novel.weekly_unique_latest != null ? novel.weekly_unique_latest.toLocaleString() : '—', null, null)}
       </div>
 
-      <div class="detail-section">
-        <h4 class="detail-section-title">順位・ポテンシャル</h4>
-        <div class="meta-row">
-          <span><strong>月刊順位:</strong> ${novel.monthly_rank_latest != null ? novel.monthly_rank_latest + ' 位' : '—'}</span>
-          <span><strong>歴代最高順位:</strong> ${novel.best_rank_ever != null ? novel.best_rank_ever + ' 位' : '—'}</span>
-          <span><strong>BM/評価比率:</strong> ${novel.bm_view_ratio != null ? novel.bm_view_ratio.toFixed(4) : '—'}</span>
-          <span><strong>評価成長率(6ヶ月):</strong> ${novel.view_growth_6mo != null ? (novel.view_growth_6mo * 100).toFixed(1) + '%' : '—'}</span>
-          <span><strong>スコア:</strong> ${score.toFixed(1)}</span>
-          <span><strong>最類似アニメ:</strong> ${escHtml(animeTitle || '—')}</span>
-          <span><strong>Nコード:</strong> <a class="novel-link" href="${narouUrl}" target="_blank" rel="noopener">${ncode}</a></span>
+      <div class="detail-group">
+        <h4 class="detail-section-title">直近の盛り上がり</h4>
+        ${detailRow('月間ポイント', novel.monthly_point_latest != null ? novel.monthly_point_latest.toLocaleString() + ' pt' : '—', novel.monthly_point_latest, _mptMax, ' pt')}
+        ${detailRow('週間ポイント', novel.weekly_point_latest != null ? novel.weekly_point_latest.toLocaleString() + ' pt' : '—', null, null)}
+        ${detailRow('日間ポイント', novel.daily_point_latest != null ? novel.daily_point_latest.toLocaleString() + ' pt' : '—', null, null)}
+        ${detailRow('総合評価ポイント', gpLatest != null ? gpLatest.toLocaleString() : '—', null, null)}
+      </div>
+
+      <div class="detail-group">
+        <h4 class="detail-section-title">ポテンシャル</h4>
+        <div class="detail-metric-row no-bar">
+          <span class="dm-label">月刊順位</span>
+          <span class="dm-val">${novel.monthly_rank_latest != null ? novel.monthly_rank_latest + ' 位' : '—'}${novel.monthly_rank_latest != null ? `<span class="dm-rank-badge">上位 ${((novel.monthly_rank_latest / 1000) * 100).toFixed(1)}%</span>` : ''}</span>
+        </div>
+        ${detailRow('歴代最高順位', novel.best_rank_ever != null ? novel.best_rank_ever + ' 位' : '—', null, null)}
+        ${detailRow('BM/View比率', novel.bm_view_ratio != null ? novel.bm_view_ratio.toFixed(4) : '—', novel.bm_view_ratio, _bmMax, '')}
+        ${detailRow('評価成長率(6ヶ月)', novel.view_growth_6mo != null ? (novel.view_growth_6mo * 100).toFixed(1) + '%' : '—', null, null)}
+        <div class="detail-metric-row score-row no-bar">
+          <span class="dm-label">スコア</span>
+          <span class="dm-score-val">${score.toFixed(1)}</span>
+        </div>
+        ${detailRow('最類似アニメ', escHtml(animeTitle || '—'), null, null)}
+        <div class="detail-metric-row no-bar">
+          <span class="dm-label">Nコード</span>
+          <span class="dm-val"><a class="novel-link" href="${narouUrl}" target="_blank" rel="noopener">${ncode}</a></span>
         </div>
       </div>
 
