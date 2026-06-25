@@ -1,25 +1,31 @@
 'use strict';
 
 // ---- モジュール状態 ----
+// novels_merged.json の内容。.novels[] = 小説一覧、.anime_works[] = アニメ作品一覧
 let novelsData = null;
+// trends_merged.json の内容（Google Trends キャッシュ）
 let trendsData = null;
+// snapshots_merged.json の内容（daily_snapshots.csv を JSON 化したもの）
 let snapshotsData = null;
+// 詳細比較パネルで選択中の作品の ncode（null = 未選択）
 let selectedNcode = null;
+// スコア計算の重みパラメータ（合計が 0 でなければ自動正規化して使用）
+// キー詳細: RequirementsDocument/FieldReference.md §7 参照
 let currentWeights = { genre: 0, tag: 0, rank: 17, bmView: 13, growth: 8, eval: 7, monthlyPoint: 10, activity: 5 };
 
-// norm_params 管理（満点基準値）
+// norm_params 管理（スコア満点基準値。詳細: RequirementsDocument/FieldReference.md §6 参照）
 let fileNormParams = null;    // norm_params.json から読み込んだファイルデフォルト
 let currentNormParams = null; // 現在有効な基準値（localStorage 優先）
-const LS_NORM_KEY = 'animeTool.normParams';
+const LS_NORM_KEY = 'animeTool.normParams'; // localStorage 保存キー
 
 // ページネーション
 let currentPage = 0;
-const PAGE_SIZE = 100;
+const PAGE_SIZE = 100; // 1ページあたりの表示件数
 
-// 並び替え
+// 並び替え（'score' / 'monthly_rank_latest' / 'all_hyoka_cnt_latest' / SORT_EXTRA_COL のキー）
 let sortBy = 'score';
 
-// グラフ表示設定
+// 詳細パネルで表示するグラフの ID セット（localStorage 永続化）
 let visibleGraphs = new Set();
 const GRAPHS_LS_KEY = 'animeTool.graphs';
 
@@ -90,27 +96,34 @@ const GRAPH_CONFIGS = [
   },
 ];
 
-// 評価グラフ状態
-let evalDisplayMode = 'cumulative'; // 'cumulative' | 'delta'
-let evalMetric = 'hyoka';           // 'hyoka' | 'point'
+// 評価グラフ表示モード（'cumulative'=累計 / 'delta'=日次増分）
+let evalDisplayMode = 'cumulative';
+// 評価グラフで使うメトリクス（'hyoka'=評価件数 / 'point'=評価ポイント）
+let evalMetric = 'hyoka';
+// 詳細パネルで表示中の評価履歴データ
 let currentEvalHistory = [];
+// 詳細パネルで表示中の作品タイトル（グラフタイトル用）
 let currentEvalNovelTitle = '';
 
-// Chart.js インスタンス（再描画時に破棄する）
-let comparisonChart = null;
-let rankingTrendChart = null;
-let evalTrendChart = null;
-let trendsChart = null;
-let topAnimeChart = null;
-let radarChart = null;
-let benchmarkChart = null;
-let growthTrendChart = null;
-let correlationChart = null;
+// Chart.js インスタンス（再描画時に既存インスタンスを destroy() してから再生成する）
+let comparisonChart = null;      // 詳細比較パネルのメインスコアグラフ
+let rankingTrendChart = null;    // 月刊ランク推移グラフ
+let evalTrendChart = null;       // 評価件数・ポイント推移グラフ
+let trendsChart = null;          // Google Trends 推移グラフ
+let topAnimeChart = null;        // 類似アニメ Top5 横棒グラフ
+let radarChart = null;           // スコアレーダーチャート
+let benchmarkChart = null;       // 全作品比較パーセンタイルグラフ
+let growthTrendChart = null;     // 成長分析タブのトレンドグラフ
+let correlationChart = null;     // 成長分析タブの相関散布図
 
 // ---- 成長分析タブの状態 ----
+// Y軸メトリクス（'all_hyoka_cnt'=評価件数 / 'all_point'=評価ポイント）
 let growthMetric = 'all_hyoka_cnt';
+// 比較期間（'1d'=前日比 / '7d'=7日比 / '30d'=30日比）
 let growthPeriod = '30d';
+// 成長値の種類（'delta'=増加数 / 'rate'=増加率%）
 let growthValueType = 'delta';
+// 上位表示件数
 let growthTopN = 10;
 
 // 相関グラフ軸の選択肢定義
@@ -133,7 +146,10 @@ const CORR_AXIS_OPTIONS = [
   { key: 'growth_all_point_30d_rate',      label: '評価ポイント 30日増加率(%)' },
 ];
 
+// スコア重みのデフォルト値。「デフォルトに戻す」のリセット基準
+// キー詳細: RequirementsDocument/FieldReference.md §7 参照
 const DEFAULT_WEIGHTS = { genre: 0, tag: 0, rank: 17, bmView: 13, growth: 8, eval: 7, monthlyPoint: 10, activity: 5 };
+// スコア重みを保存する localStorage キー
 const LS_KEY = 'animeTool.weights';
 
 // ---- データ読み込み ----
