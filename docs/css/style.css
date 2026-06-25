@@ -1115,3 +1115,130 @@ tbody td {
     display: none;
   }
 }
+
+/* ---- レーダーチャート統合セクション ---- */
+
+/* アニメ選択チップ */
+.radar-anime-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.radar-anime-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  cursor: pointer;
+  user-select: none;
+  background: #f8f8f8;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.radar-anime-chip input {
+  accent-color: #e94560;
+}
+
+.radar-anime-chip:has(input:checked) {
+  border-color: #e94560;
+  background: #fff0f3;
+}
+
+/* グラフセクション footer */
+.graph-footer {
+  margin-top: 1.25rem;
+}
+
+.radar-section-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.3rem;
+  margin-bottom: 0.6rem;
+}
+
+/* 自分のスコアグリッド */
+.radar-self-scores {
+  margin-bottom: 1.25rem;
+}
+
+.radar-self-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+}
+
+.radar-self-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 68px;
+}
+
+.rsi-label {
+  font-size: 0.7rem;
+  color: #888;
+  text-align: center;
+}
+
+.rsi-val {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+/* 類似アニメ Top5 テーブル */
+.top5-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  color: #333;
+}
+
+.top5-table th {
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 2px solid #eee;
+  color: #888;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+.top5-table td {
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid #f2f2f2;
+}
+
+.top5-rank  { color: #888; font-weight: 700; width: 2rem; }
+.top5-title { font-weight: 500; }
+.top5-match-yes { color: #1a7431; font-weight: 600; white-space: nowrap; }
+.top5-match-no  { color: #c0392b; font-weight: 600; white-space: nowrap; }
+.top5-score { font-weight: 700; color: #0f3460; text-align: right; }
+
+.top5-tag-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.top5-tag-bar {
+  height: 6px;
+  background: #0f3460;
+  border-radius: 3px;
+  min-width: 2px;
+  max-width: 80px;
+}
+
+.top5-tag-pct {
+  font-size: 0.75rem;
+  color: #666;
+  white-space: nowrap;
+}

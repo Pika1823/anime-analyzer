@@ -72,7 +72,7 @@ const GRAPH_CONFIGS = [
     label: 'スコア内訳',
     chartTitle: 'スコア内訳（最類似アニメとの比較）',
     canvasId: 'score-breakdown-chart',
-    defaultOn: true,
+    defaultOn: false,
     hint: 'どの指標でスコアが高いか一目で確認できます。ランクとBM/Viewが高い作品はコア読者の定着度が高い傾向にあります。',
   },
   {
@@ -80,16 +80,21 @@ const GRAPH_CONFIGS = [
     label: '類似アニメTop5',
     chartTitle: '類似アニメ Top5 スコア',
     canvasId: 'top-anime-chart',
-    defaultOn: true,
+    defaultOn: false,
     hint: '複数のアニメと比較した際のスコア分布です。上位アニメとのスコア差が小さいほど幅広い作品に似ており、汎用性が高いことを示します。',
   },
   {
     id: 'radar',
-    label: 'レーダーチャート',
-    chartTitle: 'スコアレーダーチャート（最類似アニメとの比較）',
+    label: 'スコア比較',
+    chartTitle: 'スコアレーダーチャート（類似アニメとの比較）',
     canvasId: 'radar-chart',
-    defaultOn: false,
-    hint: '8指標のバランスを直感的に把握できます。面積が大きいほど総合的に強い作品です。偏りが少ない形がアニメ化しやすいプロファイルです。',
+    defaultOn: true,
+    controls: '<div id="radar-anime-selector" class="radar-anime-selector"></div>',
+    footer: `
+      <div id="radar-self-scores" class="radar-self-scores"></div>
+      <div id="radar-top5-table"></div>
+    `,
+    hint: '8指標の生スコア（0〜1）を表示。チェックで最大5アニメを重ねて比較できます。ジャンル・タグ軸だけがアニメごとに変わります。',
   },
   {
     id: 'benchmark',
@@ -628,10 +633,12 @@ function renderComparison(ncode) {
   const graphSections = GRAPH_CONFIGS.map((g) => {
     const isVisible = visibleGraphs.has(g.id);
     const controlsHtml = g.controls ? g.controls : '';
+    const footerHtml = g.footer ? `<div class="graph-footer" id="graph-footer-${g.id}">${g.footer}</div>` : '';
     return `<div class="card graph-section${isVisible ? '' : ' hidden'}" id="graph-section-${g.id}">
       <h4 class="chart-title">${g.chartTitle}</h4>
       ${controlsHtml}
       <div class="chart-container"><canvas id="${g.canvasId}"></canvas></div>
+      ${footerHtml}
       <p class="graph-hint">💡 ${g.hint}</p>
     </div>`;
   }).join('');
@@ -886,13 +893,7 @@ function renderGraphById(graphId, novel, bestEntry, animeTitle, rankHistory) {
       renderTopAnimeChart(novel);
       break;
     case 'radar':
-      if (bestEntry) {
-        renderRadarChart(bestEntry, animeTitle);
-      } else {
-        const el = document.getElementById('radar-chart');
-        if (el) el.parentElement.innerHTML =
-          '<p style="color:#888;font-size:0.875rem;">スコアデータがありません。</p>';
-      }
+      renderRadarChart(novel);
       break;
     case 'benchmark':
       renderBenchmarkChart(novel);
@@ -1117,34 +1118,38 @@ function renderTopAnimeChart(novel) {
   });
 }
 
-// レーダーチャート（6指標のバランス）
-function renderRadarChart(entry, animeTitle) {
+// レーダーチャート: アニメ選択チップ + 重ね表示 + 自分スコアグリッド + Top5テーブル
+const RADAR_COLORS = ['#e94560', '#0f3460', '#16a085', '#c4851a', '#8e44ad'];
+const RADAR_LABELS = ['ジャンル一致', 'タグ類似度', 'ランク', 'BM/View比率', '評価成長率', '評価件数', '月間ポイント', '活性スコア'];
+
+function renderRadarChart(novel) {
   const ctx = document.getElementById('radar-chart');
   if (!ctx) return;
 
-  if (radarChart) { radarChart.destroy(); radarChart = null; }
+  const entries = (novel.pattern1_scores || []).slice(0, 5);
+  if (entries.length === 0) {
+    ctx.parentElement.innerHTML = '<p style="color:#888;font-size:0.875rem;">スコアデータがありません。</p>';
+    return;
+  }
 
+  // ① アニメ選択チップ（初期は先頭1つのみ checked）
+  const selectorEl = document.getElementById('radar-anime-selector');
+  if (selectorEl) {
+    selectorEl.innerHTML = entries.map((e, i) => `
+      <label class="radar-anime-chip">
+        <input type="checkbox" data-radar-idx="${i}" ${i === 0 ? 'checked' : ''}>
+        ${escHtml(e.anime_title)}
+      </label>`).join('');
+    selectorEl.querySelectorAll('input[data-radar-idx]').forEach((cb) => {
+      cb.addEventListener('change', () => _refreshRadar());
+    });
+  }
+
+  // ② レーダーChart初期化
+  if (radarChart) { radarChart.destroy(); radarChart = null; }
   radarChart = new Chart(ctx, {
     type: 'radar',
-    data: {
-      labels: ['ジャンル', 'タグ', 'ランク', 'BM/評価比率', '評価成長率', '評価件数', '月間ポイント', '活性スコア'],
-      datasets: [{
-        label: `vs ${animeTitle}`,
-        data: [
-          entry.genre_score || 0,
-          entry.tag_score || 0,
-          entry.rank_score || 0,
-          entry.bm_view_score || 0,
-          entry.growth_score || 0,
-          entry.eval_score || 0,
-          entry.monthly_point_score || 0,
-          entry.activity_score || 0,
-        ],
-        backgroundColor: 'rgba(233,69,96,0.2)',
-        borderColor: '#e94560',
-        pointBackgroundColor: '#e94560',
-      }],
-    },
+    data: { labels: RADAR_LABELS, datasets: [] },
     options: {
       responsive: true,
       maintainAspectRatio: false,
@@ -1152,13 +1157,113 @@ function renderRadarChart(entry, animeTitle) {
         r: {
           min: 0,
           max: 1,
-          ticks: { stepSize: 0.2, display: false },
-          pointLabels: { font: { size: 12 } },
+          ticks: { stepSize: 0.25, display: false },
+          pointLabels: { font: { size: 11 } },
         },
       },
-      plugins: { legend: { display: true } },
+      plugins: { legend: { display: true, position: 'bottom' } },
     },
   });
+
+  // ③ 自分のスコアグリッド（best entry の値を表示）
+  const best = entries[0];
+  const selfScoresEl = document.getElementById('radar-self-scores');
+  if (selfScoresEl && best) {
+    const items = [
+      ['ジャンル一致', (best.genre_score || 0) >= 1.0 ? '✓ 一致' : '✗ なし'],
+      ['タグ類似度',   `${Math.round((best.tag_score || 0) * 100)}%`],
+      ['ランク',       best.rank_score != null ? best.rank_score.toFixed(2) : '—'],
+      ['BM/View比率',  best.bm_view_score != null ? best.bm_view_score.toFixed(2) : '—'],
+      ['評価成長率',   best.growth_score != null ? best.growth_score.toFixed(2) : '—'],
+      ['評価件数',     best.eval_score != null ? best.eval_score.toFixed(2) : '—'],
+      ['月間ポイント', best.monthly_point_score != null ? best.monthly_point_score.toFixed(2) : '—'],
+      ['活性スコア',   best.activity_score != null ? best.activity_score.toFixed(2) : '—'],
+    ];
+    selfScoresEl.innerHTML = `
+      <p class="radar-section-label">自分の指標スコア（0.0〜1.0）</p>
+      <div class="radar-self-grid">
+        ${items.map(([k, v]) => `
+          <div class="radar-self-item">
+            <span class="rsi-label">${k}</span>
+            <span class="rsi-val">${v}</span>
+          </div>`).join('')}
+      </div>`;
+  }
+
+  // ④ Top5テーブル描画
+  _renderRadarTop5Table(novel);
+
+  // 初期描画
+  _refreshRadar();
+
+  function _refreshRadar() {
+    const checkboxes = document.querySelectorAll('#radar-anime-selector input[data-radar-idx]');
+    const datasets = [];
+    checkboxes.forEach((cb) => {
+      if (!cb.checked) return;
+      const i = parseInt(cb.dataset.radarIdx, 10);
+      const e = entries[i];
+      if (!e) return;
+      const color = RADAR_COLORS[i] || RADAR_COLORS[0];
+      datasets.push({
+        label: `vs ${e.anime_title}`,
+        data: [
+          e.genre_score || 0, e.tag_score || 0, e.rank_score || 0, e.bm_view_score || 0,
+          e.growth_score || 0, e.eval_score || 0, e.monthly_point_score || 0, e.activity_score || 0,
+        ],
+        backgroundColor: `${color}33`,
+        borderColor: color,
+        pointBackgroundColor: color,
+      });
+    });
+    if (radarChart) { radarChart.data.datasets = datasets; radarChart.update(); }
+  }
+}
+
+// 類似アニメ Top5 テーブル（radar footer 内に描画）
+function _renderRadarTop5Table(novel) {
+  const tableEl = document.getElementById('radar-top5-table');
+  if (!tableEl || !novel.pattern1_scores?.length) return;
+
+  const totalWeight =
+    (currentWeights.genre || 0) + (currentWeights.tag || 0) + (currentWeights.rank || 0) +
+    (currentWeights.bmView || 0) + (currentWeights.growth || 0) + (currentWeights.eval || 0) +
+    (currentWeights.monthlyPoint || 0) + (currentWeights.activity || 0);
+
+  const top5 = [...novel.pattern1_scores]
+    .map((e) => ({
+      title: e.anime_title,
+      score: totalWeight > 0 ? calcEntryScore(e, currentWeights) / totalWeight * 100 : 0,
+      genreMatch: (e.genre_score || 0) >= 1.0,
+      tagPct: Math.round((e.tag_score || 0) * 100),
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
+
+  tableEl.innerHTML = `
+    <p class="radar-section-label">類似アニメ Top5</p>
+    <table class="top5-table">
+      <thead>
+        <tr>
+          <th>#</th><th>アニメ名</th><th>ジャンル一致</th><th>タグ類似度</th><th>スコア</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${top5.map((e, i) => `
+          <tr>
+            <td class="top5-rank">${i + 1}</td>
+            <td class="top5-title">${escHtml(e.title)}</td>
+            <td class="${e.genreMatch ? 'top5-match-yes' : 'top5-match-no'}">${e.genreMatch ? '✓ 一致' : '✗ 不一致'}</td>
+            <td>
+              <div class="top5-tag-wrap">
+                <div class="top5-tag-bar" style="width:${e.tagPct}%"></div>
+                <span class="top5-tag-pct">${e.tagPct}%</span>
+              </div>
+            </td>
+            <td class="top5-score">${e.score.toFixed(1)}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
 }
 
 // 全ランキング作品中のパーセンタイル棒グラフ
