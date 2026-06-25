@@ -536,6 +536,107 @@ tbody td {
   font-size: 0.875rem;
 }
 
+/* ---- 指標ⓘボタン ---- */
+.metric-info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid #aab;
+  border-radius: 50%;
+  background: #f4f5f9;
+  color: #557;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  vertical-align: middle;
+  margin-left: 4px;
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.metric-info-btn:hover {
+  background: #0f3460;
+  color: #fff;
+  border-color: #0f3460;
+}
+
+/* ---- フローティングツールチップ ---- */
+.metric-tooltip {
+  position: absolute;
+  z-index: 2000;
+  width: 280px;
+  background: #fff;
+  border: 1px solid #dde;
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.14);
+  padding: 0.9rem 1rem;
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+.metric-tooltip.hidden { display: none; }
+.metric-tooltip-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+.metric-tooltip-title {
+  font-weight: 700;
+  color: #1a1a2e;
+  font-size: 0.9rem;
+}
+.metric-tooltip-close {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  color: #888;
+  cursor: pointer;
+  padding: 0 0 0 0.5rem;
+  line-height: 1;
+}
+.metric-tooltip-close:hover { color: #e94560; }
+.metric-tooltip-desc {
+  color: #444;
+  margin: 0 0 0.35rem;
+}
+.metric-tooltip-example {
+  font-size: 0.78rem;
+  color: #888;
+  border-top: 1px solid #eee;
+  padding-top: 0.4rem;
+  margin: 0;
+}
+
+/* ---- 評価グラフ コントロール改善 ---- */
+.ctrl-group-label {
+  font-size: 0.78rem;
+  color: #888;
+  margin-right: 2px;
+  align-self: center;
+}
+.ctrl-sep {
+  display: inline-block;
+  width: 1px;
+  height: 18px;
+  background: #ddd;
+  margin: 0 6px;
+  vertical-align: middle;
+}
+.metric-desc-bar {
+  font-size: 0.78rem;
+  color: #666;
+  background: #f7f8fc;
+  border-left: 3px solid #c5cae9;
+  padding: 0.4rem 0.7rem;
+  margin-top: 0.4rem;
+  border-radius: 0 4px 4px 0;
+  line-height: 1.5;
+  min-height: 1.6rem;
+}
+
 /* norm_params（満点基準値）設定UI */
 .norm-row {
   display: flex;

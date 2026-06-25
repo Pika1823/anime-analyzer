@@ -56,11 +56,16 @@ const GRAPH_CONFIGS = [
     defaultOn: true,
     hint: '読者の能動的な評価行動の蓄積を表します。「日次増分」に切り替えると日々の伸びが確認できます。急増しているタイミングを口コミ拡散のサインとして捉えられます。',
     controls: `<div class="graph-controls">
+      <span class="ctrl-group-label">指標:</span>
       <button class="eval-ctrl-btn active" data-ctrl="metric" data-val="hyoka">評価件数</button>
       <button class="eval-ctrl-btn" data-ctrl="metric" data-val="point">評価ポイント</button>
+      <button class="metric-info-btn" data-metric-key="all_hyoka_cnt" title="指標の説明を見る">ⓘ</button>
+      <span class="ctrl-sep"></span>
+      <span class="ctrl-group-label">表示:</span>
       <button class="eval-ctrl-btn active" data-ctrl="mode" data-val="cumulative">累計</button>
       <button class="eval-ctrl-btn" data-ctrl="mode" data-val="delta">日次増分</button>
-    </div>`,
+    </div>
+    <div class="metric-desc-bar" id="eval-metric-desc"></div>`,
   },
   {
     id: 'score_breakdown',
@@ -146,6 +151,83 @@ const CORR_AXIS_OPTIONS = [
   { key: 'growth_all_point_30d_rate',      label: '評価ポイント 30日増加率(%)' },
 ];
 
+// ---- 指標メタ情報（ツールチップ・説明文に使用） ----
+// 詳細: RequirementsDocument/FieldReference.md §9 参照
+const METRIC_INFO = {
+  all_hyoka_cnt: {
+    label: '累計評価件数',
+    unit: '件',
+    desc: 'なろうの ♡ 評価の累計数。読者が「良い」と感じたときに付ける。いいね数の代替指標として使用。多いほど読者の支持が厚い。',
+    example: '〜1,000件: 平均的 ／ 10,000件以上: 上位層',
+  },
+  all_point: {
+    label: '累計評価ポイント',
+    unit: 'pt',
+    desc: '全期間の評価値の合計ポイント。件数は同じでも評価値の高低でポイントが変わる。評価件数と合わせて読者の熱量を多角的に測る。',
+    example: '〜10,000pt: 平均的 ／ 100,000pt以上: 上位層',
+  },
+  global_point: {
+    label: '総合評価ポイント',
+    unit: 'pt',
+    desc: 'なろうの総合ランキング算出に使われるポイント。View 数 API がないため、累計閲覧数の代替指標として使用。数値が大きいほど多くの読者に読まれている。',
+    example: '数値が大きいほど閲覧数が多い作品',
+  },
+  bookmark_count: {
+    label: 'ブックマーク数',
+    unit: '件',
+    desc: 'お気に入り登録数。「続きを読みたい」という継続意欲を持つ読者の数。コア読者数の最も直接的な指標。',
+    example: '〜1,000件: 平均的 ／ 10,000件以上: 人気作',
+  },
+  monthly_point: {
+    label: '月間評価ポイント',
+    unit: 'pt',
+    desc: '直近1ヶ月間に付いた評価ポイント。最近の盛り上がりや話題性を示す指標。累計でなく「今の勢い」がわかる。',
+    example: '急増していれば口コミ拡散のサイン',
+  },
+  daily_point: {
+    label: '日間評価ポイント',
+    unit: 'pt',
+    desc: '当日付いた評価ポイント。短期的なバズ（急上昇）を捉える指標。スナップショットには蓄積されないため推移グラフには非対応。',
+  },
+  weekly_point: {
+    label: '週間評価ポイント',
+    unit: 'pt',
+    desc: '直近7日間の評価ポイント。日間と月間の中間的なトレンド指標。スナップショットには蓄積されないため推移グラフには非対応。',
+  },
+  impression_cnt: {
+    label: '感想件数',
+    unit: '件',
+    desc: '読者が感想コメントを書いた件数。評価（♡）より能動的な行動で、高いエンゲージメントの指標。アニメ化された作品は感想件数が多い傾向がある。',
+  },
+  review_cnt: {
+    label: 'レビュー件数',
+    unit: '件',
+    desc: 'サイト内レビューの件数。感想よりさらに丁寧な考察・推薦文。質的な支持の指標。',
+  },
+  monthly_rank: {
+    label: '月刊ランク',
+    unit: '位',
+    desc: 'なろう月刊ランキングでの順位（1〜1000位）。1位が最上位。アニメ化検討の基本的な参照指標。TOP100圏内が有力候補とされる。',
+    example: '1〜100位: 有力候補 ／ 101〜300位: 注目圏 ／ 301位以降: ポテンシャル確認が必要',
+  },
+  bm_view_ratio: {
+    label: 'BM/View比率',
+    unit: '',
+    desc: 'ブックマーク数 ÷ 総合評価ポイント。コア読者（継続読者）の割合を示す指標。高いほど「じっくり読む熱心な読者」が多く、根強いファンがいることを示す。',
+    example: '0.1以上: コア読者比率が高い作品',
+  },
+};
+
+// 成長分析タブで使用できる指標の設定
+// source: 'growth_metrics' = novels_merged.json の growth_metrics から取得
+// source: 'snapshot' = snapshotsData からブラウザ側で増分を計算
+const GROWTH_METRIC_CONFIG = {
+  all_hyoka_cnt:  { label: '累計評価件数',     shortLabel: '累計評価件数（件）', unit: '件',  source: 'growth_metrics', infoKey: 'all_hyoka_cnt' },
+  all_point:      { label: '累計評価ポイント', shortLabel: '累計評価ポイント',   unit: 'pt', source: 'growth_metrics', infoKey: 'all_point' },
+  global_point:   { label: '総合評価ポイント', shortLabel: '総合評価ポイント',   unit: 'pt', source: 'snapshot',       infoKey: 'global_point' },
+  bookmark_count: { label: 'ブックマーク数',   shortLabel: 'ブックマーク数（件）', unit: '件', source: 'snapshot',       infoKey: 'bookmark_count' },
+};
+
 // スコア重みのデフォルト値。「デフォルトに戻す」のリセット基準
 // キー詳細: RequirementsDocument/FieldReference.md §7 参照
 const DEFAULT_WEIGHTS = { genre: 0, tag: 0, rank: 17, bmView: 13, growth: 8, eval: 7, monthlyPoint: 10, activity: 5 };
@@ -208,6 +290,32 @@ async function loadData() {
 function showLoading() {
   document.getElementById('ranking-body').innerHTML =
     '<tr><td colspan="7" class="placeholder">データを読み込み中です...</td></tr>';
+}
+
+// ---- 指標ツールチップ ----
+function showMetricTooltip(triggerEl, metricKey) {
+  const info = METRIC_INFO[metricKey];
+  if (!info) return;
+  const tip = document.getElementById('metric-tooltip');
+  if (!tip) return;
+  document.getElementById('metric-tooltip-title').textContent = info.label + (info.unit ? `（${info.unit}）` : '');
+  document.getElementById('metric-tooltip-desc').textContent = info.desc;
+  const exEl = document.getElementById('metric-tooltip-example');
+  if (info.example) { exEl.textContent = '例: ' + info.example; exEl.style.display = ''; }
+  else { exEl.style.display = 'none'; }
+  // triggerEl の位置に合わせて配置（画面端クリップを防ぐ）
+  const rect = triggerEl.getBoundingClientRect();
+  const tipW = 280;
+  let left = rect.left + window.scrollX;
+  if (left + tipW > window.innerWidth - 8) left = window.innerWidth - tipW - 8;
+  if (left < 8) left = 8;
+  tip.style.top = (rect.bottom + window.scrollY + 6) + 'px';
+  tip.style.left = left + 'px';
+  tip.classList.remove('hidden');
+}
+
+function hideMetricTooltip() {
+  document.getElementById('metric-tooltip')?.classList.add('hidden');
 }
 
 // ---- visibleGraphs のローカルストレージ管理 ----
@@ -627,6 +735,22 @@ function renderComparison(ncode) {
     ${graphSections}
   `;
 
+  // eval_trend: 指標説明バーを更新するユーティリティ
+  const updateEvalMetricDesc = () => {
+    const descEl = container.querySelector('#eval-metric-desc');
+    if (!descEl) return;
+    const infoKey = evalMetric === 'hyoka' ? 'all_hyoka_cnt' : 'all_point';
+    const info = METRIC_INFO[infoKey];
+    descEl.textContent = info ? `📖 ${info.desc}` : '';
+  };
+  // eval_trend: ⓘ ボタンのツールチップ
+  container.querySelectorAll('.metric-info-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const infoKey = evalMetric === 'hyoka' ? 'all_hyoka_cnt' : 'all_point';
+      showMetricTooltip(btn, infoKey);
+    });
+  });
   // eval_trend コントロールボタンのイベント
   container.querySelectorAll('.eval-ctrl-btn').forEach((btn) => {
     const ctrl = btn.dataset.ctrl;
@@ -641,16 +765,21 @@ function renderComparison(ncode) {
       if (ctrl === 'metric') {
         evalMetric = val;
         container.querySelectorAll('[data-ctrl="metric"]').forEach((b) => b.classList.remove('active'));
+        // ⓘ ボタンのデータキーを更新（次回クリック時に正しい指標を表示するため）
+        const infoBtn = container.querySelector('.metric-info-btn[data-metric-key]');
+        if (infoBtn) infoBtn.dataset.metricKey = val === 'hyoka' ? 'all_hyoka_cnt' : 'all_point';
       } else {
         evalDisplayMode = val;
         container.querySelectorAll('[data-ctrl="mode"]').forEach((b) => b.classList.remove('active'));
       }
       btn.classList.add('active');
+      updateEvalMetricDesc();
       if (visibleGraphs.has('eval_trend') && currentEvalHistory.length > 0) {
         renderEvalTrend(currentEvalHistory, currentEvalNovelTitle);
       }
     });
   });
+  updateEvalMetricDesc();
 
   // グラフトグルボタンのイベント
   container.querySelectorAll('.graph-toggle-btn').forEach((btn) => {
@@ -1196,13 +1325,45 @@ function getNovelGrowthValue(novel, axisKey) {
 }
 
 // 成長ランキングの上位N件を取得する（ランキング表・グラフで共用）
+// スナップショットデータから指定期間の増分・増加率を計算する（browser-side）
+// growth_metrics に含まれないメトリクス（global_point, bookmark_count 等）に使用
+function computeSnapshotDelta(ncode, metric, periodKey) {
+  const snaps = snapshotsData?.snapshots?.[ncode];
+  if (!snaps || snaps.length === 0) return null;
+  const sorted = [...snaps].sort((a, b) => a.date.localeCompare(b.date));
+  const latest = sorted[sorted.length - 1];
+  const currentVal = latest[metric];
+  if (currentVal == null) return null;
+
+  const periodDays = { '1d': 1, '7d': 7, '30d': 30 };
+  const days = periodDays[periodKey] || 30;
+  const targetDt = new Date(latest.date + 'T00:00:00');
+  targetDt.setDate(targetDt.getDate() - days);
+  const targetDateStr = targetDt.toISOString().slice(0, 10);
+  const past = sorted.filter((s) => s.date <= targetDateStr).pop();
+  if (!past) return null;
+  const pastVal = past[metric];
+  if (pastVal == null) return null;
+
+  const delta = currentVal - pastVal;
+  const rate = pastVal > 0 ? (delta / pastVal) * 100 : null;
+  return { current: currentVal, delta, rate };
+}
+
 function getGrowthRankedNovels(metric, period, valueType, topN) {
   if (!novelsData?.novels) return [];
+  const cfg = GROWTH_METRIC_CONFIG[metric];
   return novelsData.novels
     .filter((n) => !n.is_anime)
     .map((n) => {
-      const gm = n.growth_metrics?.[metric]?.[period];
-      return { ...n, _gval: gm ? gm[valueType] : null };
+      let gm;
+      if (!cfg || cfg.source === 'growth_metrics') {
+        gm = n.growth_metrics?.[metric]?.[period];
+      } else {
+        // snapshotsData からブラウザ側で計算
+        gm = computeSnapshotDelta(n.ncode, metric, period);
+      }
+      return { ...n, _gval: gm ? gm[valueType] : null, _gm: gm };
     })
     .filter((n) => n._gval !== null)
     .sort((a, b) => b._gval - a._gval)
@@ -1232,9 +1393,9 @@ function renderGrowthRankingTable() {
   const tbody = document.getElementById('growth-ranking-body');
   if (!tbody) return;
 
-  const METRIC_LABELS = { all_hyoka_cnt: '評価件数', all_point: '評価ポイント' };
+  const METRIC_LABELS = Object.fromEntries(Object.entries(GROWTH_METRIC_CONFIG).map(([k, v]) => [k, v.label]));
   const PERIOD_LABELS = { '1d': '前日比', '7d': '7日比', '30d': '30日比' };
-  const UNIT = { all_hyoka_cnt: '件', all_point: 'pt' };
+  const UNIT = Object.fromEntries(Object.entries(GROWTH_METRIC_CONFIG).map(([k, v]) => [k, v.unit]));
   const metricLabel = METRIC_LABELS[growthMetric] || growthMetric;
   const periodLabel = PERIOD_LABELS[growthPeriod] || growthPeriod;
   const unit = UNIT[growthMetric] || '';
@@ -1264,7 +1425,7 @@ function renderGrowthRankingTable() {
   }
 
   tbody.innerHTML = novels.map((n, i) => {
-    const gm = n.growth_metrics?.[growthMetric]?.[growthPeriod];
+    const gm = n._gm; // getGrowthRankedNovels で計算済みの増分データ
     const currentVal = gm?.current;
     const delta = gm?.delta;
     const rate = gm?.rate;
@@ -1302,7 +1463,7 @@ function renderGrowthTrendChart() {
     return;
   }
 
-  const METRIC_LABELS = { all_hyoka_cnt: '累計評価件数（件）', all_point: '累計評価ポイント' };
+  const METRIC_LABELS = Object.fromEntries(Object.entries(GROWTH_METRIC_CONFIG).map(([k, v]) => [k, v.shortLabel]));
   const PERIOD_LABELS = { '1d': '前日', '7d': '7日前', '30d': '30日前' };
   if (titleEl) titleEl.textContent = `成長推移グラフ — ${METRIC_LABELS[growthMetric] || growthMetric}（上位${growthTopN}作品）`;
 
@@ -2336,6 +2497,21 @@ document.addEventListener('DOMContentLoaded', () => {
       renderGrowthTab();
     });
   });
+
+  // 成長タブ 指標ⓘ ボタン
+  document.getElementById('growth-metric-info-btn')?.addEventListener('click', (e) => {
+    const infoKey = GROWTH_METRIC_CONFIG[growthMetric]?.infoKey || growthMetric;
+    showMetricTooltip(e.currentTarget, infoKey);
+  });
+
+  // ツールチップを画面クリックで閉じる
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#metric-tooltip') && !e.target.classList.contains('metric-info-btn')) {
+      hideMetricTooltip();
+    }
+  });
+
+  document.getElementById('metric-tooltip-close')?.addEventListener('click', hideMetricTooltip);
 
   document.getElementById('corr-x-axis')?.addEventListener('change', renderCorrelationChart);
   document.getElementById('corr-y-axis')?.addEventListener('change', renderCorrelationChart);

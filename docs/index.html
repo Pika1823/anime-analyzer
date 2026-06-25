@@ -162,9 +162,12 @@
     <div class="filter-bar">
       <label>指標:
         <select id="growth-metric">
-          <option value="all_hyoka_cnt">評価件数</option>
-          <option value="all_point">評価ポイント</option>
+          <option value="all_hyoka_cnt">累計評価件数</option>
+          <option value="all_point">累計評価ポイント</option>
+          <option value="global_point">総合評価ポイント</option>
+          <option value="bookmark_count">ブックマーク数</option>
         </select>
+        <button class="metric-info-btn" id="growth-metric-info-btn" title="指標の説明を見る">ⓘ</button>
       </label>
       <label>期間:
         <select id="growth-period">
@@ -475,6 +478,16 @@
   </section>
 
 </main>
+
+<!-- 指標説明フローティングツールチップ -->
+<div id="metric-tooltip" class="metric-tooltip hidden" role="tooltip" aria-hidden="true">
+  <div class="metric-tooltip-header">
+    <span class="metric-tooltip-title" id="metric-tooltip-title"></span>
+    <button class="metric-tooltip-close" id="metric-tooltip-close" aria-label="閉じる">×</button>
+  </div>
+  <p class="metric-tooltip-desc" id="metric-tooltip-desc"></p>
+  <p class="metric-tooltip-example" id="metric-tooltip-example"></p>
+</div>
 
 </body>
 </html>
