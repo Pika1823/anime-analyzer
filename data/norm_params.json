@@ -1,17 +1,17 @@
 {
-  "computed_at": "2026-07-19",
+  "computed_at": "2026-07-20",
   "params": {
     "all_hyoka_cnt_latest": {
       "min": 0.0,
-      "max": 32554.999999999975
+      "max": 32006.41999999996
     },
     "all_point_latest": {
       "min": 0.0,
-      "max": 309697.9999999999
+      "max": 307103.03999999946
     },
     "monthly_point_latest": {
       "min": 0.0,
-      "max": 36677.999999999985
+      "max": 35330.40000000007
     },
     "impression_cnt_latest": {
       "min": 0.0,
@@ -19,7 +19,7 @@
     },
     "bm_view_ratio": {
       "min": 0.0,
-      "max": 0.3058139764805317
+      "max": 0.30200661015341257
     }
   }
 }
